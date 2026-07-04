@@ -1,0 +1,737 @@
+<!--======================================================================-->
+<!--  ECODEVICES RT2 - API-DECK v1 - GCE Electronics      maj 07/06/2026  -->
+<!--======================================================================-->
+
+<!DOCTYPE html>
+<html lang="fr" dir="ltr">
+
+<head>
+  <meta charset="utf-8">
+  <title>ECODEVICES RT2 - API-DECK v1</title>
+
+  <!-- Polices -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+
+  <style>
+  
+    /* ---------- RESET ET BOX-MODEL ---------- */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    /* ---------- VARIABLES GLOBALES ---------- */
+    :root {
+      --bg:       #0f1117;      /* fond principal de l'application */
+      --panel:    #181c27;      /* fond des panneaux et de l'en-tête */
+      --panel2:   #1e2333;      /* fond secondaire des en-têtes de panneau */
+      --border:   #2a2f3e;      /* couleur des bordures */
+      --border2:  #2e3a50;      /* bordure légèrement plus claire pour les champs */
+      --accent:   #6CC04A;      /* vert d'accentuation (GET / connexion OK) */
+      --accent2:  #0090ff;      /* bleu pour les diviseurs et le survol */
+      --accent3:  #ff6b35;      /* orange pour les erreurs/danger */
+      --post:     #d29922;      /* jaune pour la méthode POST */
+      --put:      #388bfd;      /* bleu pour la méthode PUT */
+      --delete:   #f85149;      /* rouge pour la méthode DELETE */
+      --text:     #d4d8e8;      /* texte principal clair */
+      --text-dim: #7a809a;      /* texte secondaire/estompé */
+      --header-h: 58px;         /* hauteur fixe de l'en-tête */
+      --gap:      14px;         /* espacement général entre les blocs */
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 14px;
+      overflow: hidden;
+    }
+
+    /* ---------- EN-TÊTE FIXE ---------- */
+    header {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+      height: var(--header-h);
+      display: flex; align-items: center; gap: 16px; padding: 0 24px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      box-shadow: 0 2px 20px rgba(0,0,0,.6);
+    }
+
+    /* Logo : badge coloré + texte produit */
+    .logo { display: flex; align-items: center; gap: 10px; }
+    .logo-icon {
+      width: 110px; height: 32px;
+      background: linear-gradient(135deg, #388bfd 0%, #3fb950 55%);
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'IBM Plex Mono', monospace; font-weight: 600; font-size: 11px;
+      color: #000; flex-shrink: 0;
+    }
+    header h1 { font-family: 'IBM Plex Mono', monospace; font-size: 1rem; font-weight: 600; letter-spacing: .04em; color: #fff; }
+    header h2 { font-size: .75rem; color: var(--text-dim); font-style: italic; font-weight: 400; }
+    .header-sep { flex: 1; }
+
+    /* ---------- BARRE DE CONFIGURATION (protocole, IP, clé API) ---------- */
+    .cfg-field { display: flex; align-items: center; gap: 8px; }
+    .cfg-field label {
+      font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-dim);
+      text-transform: uppercase; letter-spacing: .06em; white-space: nowrap;
+    }
+    .cfg-field input, .cfg-field select {
+      height: 30px; background: var(--bg); border: 1px solid var(--border); border-radius: 5px;
+      color: var(--accent);
+      padding: 0 10px; font-family: 'IBM Plex Mono', monospace; font-size: 12px;
+      outline: none; transition: border-color .2s;
+    }
+    .cfg-field input:focus, .cfg-field select:focus { border-color: var(--accent); }
+    #prot-sel    { width: 70px; }
+    #ip-in       { width: 140px; }
+    #apikey-input { width: 200px; }
+
+    /* ---------- INDICATEUR DE CONNEXION (point lumineux) ---------- */
+    .status-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--text-dim); transition: background .3s;
+    }
+    .status-dot.ok  { background: var(--accent);  box-shadow: 0 0 8px var(--accent); }
+    .status-dot.err { background: var(--accent3); box-shadow: 0 0 8px var(--accent3); }
+
+
+    /* ---------- BOUTONS GÉNÉRIQUES ---------- */
+    .btn {
+      height: 30px; padding: 0 14px; border: none; border-radius: 5px; cursor: pointer;
+      font-family: 'IBM Plex Sans', sans-serif; font-size: 12px; font-weight: 600;
+      transition: opacity .2s, transform .1s; white-space: nowrap;
+    }
+    .btn:active { transform: scale(.97); }
+    .btn-primary   { background: var(--accent); color: #000; }        /* action principale (Tester) */
+    .btn-primary:hover { opacity: .85; }
+    .btn-secondary { background: var(--border); color: var(--text); } /* action neutre (Copier…) */
+    .btn-secondary:hover { background: #343a4e; }
+    .btn-danger    { background: var(--accent3); color: #fff; }       /* action destructrice (Effacer) */
+    .btn-danger:hover { opacity: .85; }
+    .btn-sm        { height: 22px; padding: 0 9px; font-size: 10px; } /* variante compacte */
+
+    /* Boutons d'action dans les cartes de commande */
+    .btn-go     { background: var(--put);   color: #fff; }     /* Envoyer la requête */
+    .btn-go:hover { opacity: .85; }
+    .btn-copy   { background: var(--border); color: var(--text); }    /* Copier l'URL */
+    .btn-copy:hover { background: #343a4e; }
+    .btn-expand { background: var(--border); color: var(--text); }    /* Déplier / Replier tout */
+    .btn-expand:hover { background: #343a4e; }
+
+
+    /* ---------- WRAPPER PRINCIPAL (zone sous l'en-tête) ---------- */
+    #wrapper {
+      position: fixed; top: var(--header-h); left: 0; right: 0; bottom: 0;
+      display: flex; flex-direction: column; gap: var(--gap); padding: var(--gap);
+    }
+
+    /* ---------- LIGNE PRINCIPALE (colonnes gauche + droite) ---------- */
+    #body-row { flex: 1; min-height: 0; min-width: 0; display: flex; overflow: hidden; align-items: stretch; }
+
+    /* ---------- DIVISEURS VERTICAUX (entre colonnes) ---------- */
+    .divider {
+      flex-shrink: 0; width: 10px; cursor: col-resize;
+      display: flex; align-items: center; justify-content: center; z-index: 10;
+    }
+    .divider::after {
+      content: ''; width: 2px; height: 44px; border-radius: 2px;
+      background: var(--border); transition: background .2s, height .2s;
+    }
+    .divider:hover::after, .divider.dragging::after { background: var(--accent2); height: 64px; }
+
+    /* ---------- DIVISEUR HORIZONTAL (entre Réponse et Historique) ---------- */
+    .h-divider {
+      flex-shrink: 0; height: 10px; cursor: row-resize;
+      display: flex; align-items: center; justify-content: center; z-index: 10;
+      background: transparent;
+    }
+    .h-divider::after {
+      content: ''; width: 44px; height: 2px; border-radius: 2px;
+      background: var(--border); transition: background .2s, width .2s;
+    }
+    .h-divider:hover::after, .h-divider.dragging::after { background: var(--accent2); width: 64px; }
+
+    /* ---------- COLONNES (panneaux flexibles) ---------- */
+    .col { display: flex; flex-direction: column; min-width: 140px; min-height: 0; overflow: hidden; }
+
+    /* Panneau générique : fond, bordure, coins arrondis */
+    .panel {
+      background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+      display: flex; flex-direction: column; overflow: hidden; min-height: 0; flex: 1;
+    }
+
+    /* En-tête de panneau */
+    .ph {
+      display: flex; align-items: center; gap: 8px;
+      padding: 0 14px; height: 36px; flex-shrink: 0;
+      background: var(--panel2); border-bottom: 1px solid var(--border);
+    }
+    .ph-title {
+      font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 600;
+      letter-spacing: .08em; text-transform: uppercase; color: var(--text-dim);
+    }
+    .ph-badge {
+      background: var(--bg); border: 1px solid var(--border); border-radius: 20px;
+      padding: 1px 8px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text-dim);
+    }
+    .ph-right { margin-left: auto; display: flex; align-items: center; gap: 5px; }
+
+    /* Corps scrollable des panneaux */
+    .pb { flex: 1; overflow-y: auto; min-height: 0; }
+    .pb::-webkit-scrollbar { width: 4px; }
+    .pb::-webkit-scrollbar-track { background: transparent; }
+    .pb::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    /* Catégories (gauche) */
+    .gi {
+      padding: 10px 14px; cursor: pointer; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 9px;
+      transition: background .14s; border-left: 2px solid transparent;
+    }
+    .gi:last-child { border-bottom: none; }
+    .gi:hover { background: rgba(255,255,255,.04); }
+    .gi.active { background: rgba(108,192,74,.08); border-left-color: var(--accent); }
+    .gi-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .gi-label { font-size: 13px; font-weight: 600; }
+    .gi-desc { font-size: 11px; color: var(--text-dim); margin-top: 1px; }
+
+    /* Commandes (centre) */
+    .cmd-list { padding: 8px; display: flex; flex-direction: column; gap: 5px; }
+    .card {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 6px; overflow: hidden; transition: border-color .18s;
+    }
+    .card:hover { border-color: var(--border2); }
+    .card.open  { border-color: var(--accent2); }
+
+    .card-head {
+      display: flex; align-items: center; gap: 9px;
+      padding: 9px 13px; cursor: pointer; user-select: none;
+    }
+    /* Badges personnalisés pour les types RT2 */
+    .mb {
+      font-family: 'IBM Plex Mono', monospace; font-size: 9px; font-weight: 600;
+      padding: 2px 6px; border-radius: 3px; flex-shrink: 0; min-width: 48px; text-align: center;
+    }
+    .mb-get    { background: rgba(108,192,74,.15);  color: var(--accent); }
+    .mb-set    { background: rgba(56,139,253,.15);  color: var(--put); }
+    .mb-clear  { background: rgba(248,81,73,.15);   color: var(--delete); }
+    .mb-toggle { background: rgba(210,153,34,.15);  color: var(--post); }
+    .mb-index  { background: rgba(188,140,255,.15); color: #bc8cff; }
+    .mb-price  { background: rgba(80,200,200,.15);  color: #50c8c8; }
+    .mb-status { background: rgba(180,180,180,.15); color: #aaa; }
+
+    .card-head .cn { font-family: 'IBM Plex Mono', monospace; font-size: 12px; flex: 1.2; color: #f0f6fc; }
+    .card-head .cd { font-size: 11px; color: var(--text-dim); flex: 2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .chev { color: var(--text-dim); font-size: 10px; transition: transform .18s; flex-shrink: 0; }
+    .card.open .chev { transform: rotate(90deg); }
+
+    .card-body { display: none; padding: 12px 14px 13px; border-top: 1px solid var(--border); flex-direction: column; gap: 9px; }
+    .card.open .card-body { display: flex; }
+
+    .frow { display: flex; align-items: flex-start; gap: 9px; }
+    .frow label {
+      font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-dim);
+      width: 88px; flex-shrink: 0; padding-top: 5px;
+    }
+    .frow input, .frow select, .frow textarea {
+      flex: 1; background: var(--panel); border: 1px solid var(--border2); border-radius: 4px;
+      color: var(--text); padding: 4px 8px;
+      font-family: 'IBM Plex Mono', monospace; font-size: 12px;
+      outline: none; transition: border-color .2s;
+    }
+    .frow input, .frow select { height: 27px; }
+    .frow textarea { resize: vertical; min-height: 70px; padding: 6px 8px; font-size: 11px; }
+    .frow input:focus, .frow select:focus, .frow textarea:focus { border-color: var(--accent2); }
+    .fhint { font-size: 10px; color: var(--text-dim); font-style: italic; padding-top: 6px; white-space: nowrap; }
+
+    .url-box {
+      font-family: 'IBM Plex Mono', monospace; font-size: 11px;
+      background: #0a0d14; border: 1px solid var(--border); border-radius: 4px;
+      padding: 7px 10px; color: var(--accent); word-break: break-all; line-height: 1.65;
+    }
+    .card-btns { display: flex; gap: 7px; margin-top: 2px; }
+
+    /* Colonne droite */
+    #col-right { display: flex; flex-direction: column; min-width: 180px; min-height: 0; overflow: hidden; }
+    #resp-panel { flex: 2; min-height: 60px; overflow: hidden; display: flex; flex-direction: column; }
+    #log-panel  { flex: 1; min-height: 60px; overflow: hidden; display: flex; flex-direction: column; }
+
+    #resp-area {
+      flex: 1; min-height: 0;
+      resize: none; width: 100%;
+      background: #0a0d14; border: none;
+      color: var(--accent);
+      font-family: 'IBM Plex Mono', monospace; font-size: 11px;
+      padding: 12px; outline: none; line-height: 1.7;
+    }
+    .resp-foot {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 10px; border-top: 1px solid var(--border); flex-shrink: 0;
+    }
+
+    /* Historique */
+    .log-item {
+      padding: 8px 12px; border-bottom: 1px solid var(--border);
+      transition: background .12s; cursor: default;
+    }
+    .log-item:last-child { border-bottom: none; }
+    .log-item:hover { background: rgba(255,255,255,.03); }
+    .log-t { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text-dim); margin-bottom: 2px; }
+    .log-u { font-family: 'IBM Plex Mono', monospace; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .log-item.ok   .log-u { color: var(--accent); }
+    .log-item.err  .log-u { color: var(--delete); }
+    .no-log { padding: 20px; text-align: center; color: var(--text-dim); font-size: 12px; font-style: italic; }
+
+    /* Barre d'état */
+    #sb {
+      flex-shrink: 0;
+      display: flex; align-items: center; gap: 16px; padding: 0 16px; height: 28px;
+      background: var(--panel); border: 1px solid var(--border); border-radius: 6px;
+      font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text-dim);
+    }
+    .sbi { display: flex; align-items: center; gap: 6px; }
+    .sbi .sv { color: var(--text); }
+    #sbmsg { margin-left: auto; }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">GCE Electronics</div>
+    <h1>ECODEVICES RT2 - API-DECK v1</h1>
+  </div>
+  <div class="header-sep"></div>
+
+  <!-- Champs de configuration -->
+  <div class="cfg-field"><label>Protocole</label><select id="prot-sel" onchange="saveConfig();rebuildActive()"><option value="http">HTTP</option><option value="https">HTTPS</option></select></div>
+  <div class="cfg-field"><label>IP</label><input id="ip-in" type="text" placeholder="192.168.1.100" oninput="saveConfig();rebuildActive()"></div>
+  <div class="cfg-field"><label>ApiKey</label><input id="apikey-input" type="text" placeholder="votre clé API" oninput="saveConfig();rebuildActive()"></div>
+
+  <!-- Bouton Tester (non bloquant) -->
+  <button class="btn btn-primary" id="testBtn" onclick="testConnection()">Tester</button>
+  <div class="status-dot" id="main-dot"></div>
+</header>
+
+<div id="wrapper">
+  <div id="body-row">
+    <!-- Colonne gauche : catégories -->
+    <div class="col" id="col-left">
+      <div class="panel"><div class="ph"><span class="ph-title">Catégories</span></div><div class="pb" id="grp-list"></div></div>
+    </div>
+    <div class="divider" id="div-left"></div>
+
+    <!-- Colonne centre : commandes -->
+    <div class="col" id="col-center">
+      <div class="panel">
+        <div class="ph"><span class="ph-title" id="center-title">Commandes</span><div class="ph-badge" id="cmd-count">-</div><div class="ph-right"><button class="btn btn-sm btn-expand" onclick="expandAll()">⊞ Tout déplier</button><button class="btn btn-sm btn-expand" onclick="collapseAll()">⊟ Tout replier</button></div></div>
+        <div class="pb"><div class="cmd-list" id="cmd-list"></div></div>
+      </div>
+    </div>
+    <div class="divider" id="div-right"></div>
+
+    <!-- Colonne droite : réponse + historique -->
+    <div class="col" id="col-right">
+      <div class="panel" id="resp-panel">
+        <div class="ph"><span class="ph-title">Réponse</span><div class="ph-badge" id="resp-stat">-</div><div class="ph-right"><button class="btn btn-secondary btn-sm" onclick="copyResp()">Copier</button><button class="btn btn-secondary btn-sm" onclick="clearResp()">Effacer</button></div></div>
+        <textarea id="resp-area" readonly placeholder="La réponse JSON apparaîtra ici…"></textarea>
+      </div>
+      <div class="h-divider" id="h-divider-resp-log"></div>
+      <div class="panel" id="log-panel">
+        <div class="ph"><span class="ph-title">Historique</span><div class="ph-right"><button class="btn btn-secondary btn-sm" onclick="clearLogs()">Effacer</button></div></div>
+        <div class="pb" id="log-list"><div class="no-log">Aucune requête envoyée</div></div>
+      </div>
+    </div>
+  </div>
+  <div id="sb"><div class="sbi">Cible : <span class="sv" id="sb-target">-</span></div><div class="sbi">Dernière : <span class="sv" id="sb-last">-</span></div><span id="sbmsg"></span></div>
+</div>
+
+<script>
+ 
+  // ============================================================
+  // FONCTIONS DE SÉCURITÉ
+  // ============================================================
+  
+  /**
+   * Échappe les caractères HTML pour prévenir les injections XSS
+   * Utilisé lors de l'affichage de contenu dynamique (URLs, noms)
+   */
+  function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, function(m) {
+      if (m === '&') return '&amp;';
+      if (m === '<') return '&lt;';
+      if (m === '>') return '&gt;';
+      return m;
+    });
+  }
+
+  // ============================================================
+  // CATALOGUE DES COMMANDES RT2 (API EcoDevices)
+  // ============================================================
+  // Chaque commande peut avoir des paramètres et une fonction buildQs
+  // pour construire la query string. Les valeurs sont encodées.
+  const GROUPS = [
+    { id:'get', label:'Get', desc:'Lire l\'état', color:'#6CC04A', cmds:[
+      { type:'get', name:'Get=R',    desc:'État des 10 relais',               path:'/api/xdevices.json', params:[], qs:'Get=R' },
+      { type:'get', name:'Get=D',    desc:'État des 12 entrées digitales',    path:'/api/xdevices.json', params:[], qs:'Get=D' },
+      { type:'get', name:'Get=VO',   desc:'État des 128 sorties virtuelles',  path:'/api/xdevices.json', params:[], qs:'Get=VO' },
+      { type:'get', name:'Get=C',    desc:'État des 12 compteurs',            path:'/api/xdevices.json', params:[], qs:'Get=C' },
+      { type:'get', name:'Get=TI',   desc:'Téléinformation EDF',              path:'/api/xdevices.json', params:[], qs:'Get=TI' },
+      { type:'get', name:'Get=P',    desc:'Valeurs instantanées des postes',  path:'/api/xdevices.json', params:[], qs:'Get=P' },
+      { type:'get', name:'Get=S',    desc:'Valeurs instantanées des sous-postes', path:'/api/xdevices.json', params:[], qs:'Get=S' },
+      { type:'get', name:'Get=FP',   desc:'État des 16 zones X-4FP',         path:'/api/xdevices.json', params:[], qs:'Get=FP' },
+      { type:'get', name:'Get=XENO', desc:'État périphériques Enocean',       path:'/api/xdevices.json', params:[], qs:'Get=XENO' },
+      { type:'get', name:'Get=all',  desc:'Toutes les valeurs',               path:'/api/xdevices.json', params:[], qs:'Get=all' }
+    ]},
+    { id:'set', label:'Set', desc:'Mettre à 1', color:'#388bfd', cmds:[
+      { type:'set', name:'SetR',     desc:'Mettre un relais à 1',     path:'/api/xdevices.json', params:[{id:'num',label:'N° relais',ph:'01 à 10',hint:'ex: 01'}], buildQs:(p)=>`SetR=${encodeURIComponent(p.num)}` },
+      { type:'set', name:'SetVO',    desc:'Mettre une sortie virtuelle à 1', path:'/api/xdevices.json', params:[{id:'num',label:'N° sortie',ph:'001 à 128',hint:'ex: 001'}], buildQs:(p)=>`SetVO=${encodeURIComponent(p.num)}` },
+      { type:'set', name:'SetC',     desc:'Modifier un compteur',      path:'/api/xdevices.json', params:[{id:'num',label:'N° compteur',ph:'01 à 12 (vide=tous)',hint:'ex: 01'},{id:'val',label:'Valeur',ph:'0, +2, -50 …',hint:'ex: 0 ou +10 ou -5'}], buildQs:(p)=> p.num ? `SetC${encodeURIComponent(p.num)}=${encodeURIComponent(p.val)}` : `SetC=${encodeURIComponent(p.val)}` },
+      { type:'set', name:'SetFP',    desc:'Piloter une zone Fil Pilote', path:'/api/xdevices.json', params:[{id:'zone',label:'Zone',ph:'00 à 08',hint:'00=toutes'},{id:'mode',label:'Mode',type:'select',options:['0 - Confort','1 - Eco','2 - Hors Gel','3 - Arrêt','4 - Confort -1','5 - Confort -2']}], buildQs:(p)=> `SetFP${p.zone.padStart(2,'0')}=${encodeURIComponent(p.mode.split(' -')[0])}` },
+      { type:'set', name:'SetEnoPC', desc:'Actionneur Enocean à 1',    path:'/api/xdevices.json', params:[{id:'num',label:'N° actionneur',ph:'1 à 24',hint:'ex: 8'}], buildQs:(p)=>`SetEnoPC=${encodeURIComponent(p.num)}` }
+    ]},
+    { id:'clear', label:'Clear', desc:'Mettre à 0', color:'#f85149', cmds:[
+      { type:'clear', name:'ClearR',     desc:'Mettre un relais à 0',     path:'/api/xdevices.json', params:[{id:'num',label:'N° relais',ph:'01 à 10',hint:'ex: 02'}], buildQs:(p)=>`ClearR=${encodeURIComponent(p.num)}` },
+      { type:'clear', name:'ClearVO',    desc:'Mettre une sortie virtuelle à 0', path:'/api/xdevices.json', params:[{id:'num',label:'N° sortie',ph:'001 à 128',hint:'ex: 002'}], buildQs:(p)=>`ClearVO=${encodeURIComponent(p.num)}` },
+      { type:'clear', name:'ClearEnoPC', desc:'Actionneur Enocean à 0',   path:'/api/xdevices.json', params:[{id:'num',label:'N° actionneur',ph:'1 à 24',hint:'ex: 7'}], buildQs:(p)=>`ClearEnoPC=${encodeURIComponent(p.num)}` }
+    ]},
+    { id:'toggle', label:'Toggle', desc:'Inverser l\'état', color:'#d29922', cmds:[
+      { type:'toggle', name:'ToggleR',     desc:'Toggler un relais',     path:'/api/xdevices.json', params:[{id:'num',label:'N° relais',ph:'01 à 10',hint:'ex: 03'}], buildQs:(p)=>`ToggleR=${encodeURIComponent(p.num)}` },
+      { type:'toggle', name:'ToggleVO',    desc:'Toggler une sortie virtuelle', path:'/api/xdevices.json', params:[{id:'num',label:'N° sortie',ph:'001 à 128',hint:'ex: 003'}], buildQs:(p)=>`ToggleVO=${encodeURIComponent(p.num)}` },
+      { type:'toggle', name:'ToggleEnoPC', desc:'Toggler un actionneur Enocean', path:'/api/xdevices.json', params:[{id:'num',label:'N° actionneur',ph:'1 à 24',hint:'ex: 3'}], buildQs:(p)=>`ToggleEnoPC=${encodeURIComponent(p.num)}` }
+    ]},
+    { id:'index', label:'Index', desc:'Index de consommation', color:'#bc8cff', cmds:[
+      { type:'index', name:'Index=C',   desc:'Index des 12 compteurs',            path:'/api/xdevices.json', params:[], qs:'Index=C' },
+      { type:'index', name:'Index=T',   desc:'Index des 16 tores',                path:'/api/xdevices.json', params:[], qs:'Index=T' },
+      { type:'index', name:'Index=E',   desc:'Index téléinformation EDF',         path:'/api/xdevices.json', params:[], qs:'Index=E' },
+      { type:'index', name:'Index=P',   desc:'Index des postes',                  path:'/api/xdevices.json', params:[], qs:'Index=P' },
+      { type:'index', name:'Index=S',   desc:'Index des sous-postes',             path:'/api/xdevices.json', params:[], qs:'Index=S' },
+      { type:'index', name:'Index=all', desc:'Tous les index (JSON uniquement)',   path:'/api/xdevices.json', params:[], qs:'Index=all' },
+      { type:'index', name:'DIndex=P',  desc:'Index journaliers des postes',      path:'/api/xdevices.json', params:[], qs:'DIndex=P' },
+      { type:'index', name:'DIndex=S',  desc:'Index journaliers des sous-postes', path:'/api/xdevices.json', params:[], qs:'DIndex=S' }
+    ]},
+    { id:'price', label:'Price', desc:'Cumuls de prix', color:'#50c8c8', cmds:[
+      { type:'price', name:'Price=C',   desc:'Prix des 12 compteurs',            path:'/api/xdevices.json', params:[], qs:'Price=C' },
+      { type:'price', name:'Price=T',   desc:'Prix des 16 tores',                path:'/api/xdevices.json', params:[], qs:'Price=T' },
+      { type:'price', name:'Price=E',   desc:'Prix téléinformation EDF',         path:'/api/xdevices.json', params:[], qs:'Price=E' },
+      { type:'price', name:'Price=P',   desc:'Prix des postes',                  path:'/api/xdevices.json', params:[], qs:'Price=P' },
+      { type:'price', name:'Price=S',   desc:'Prix des sous-postes',             path:'/api/xdevices.json', params:[], qs:'Price=S' },
+      { type:'price', name:'Price=all', desc:'Tous les prix (JSON uniquement)',   path:'/api/xdevices.json', params:[], qs:'Price=all' },
+      { type:'price', name:'DPrice=P',  desc:'Prix journaliers des postes',      path:'/api/xdevices.json', params:[], qs:'DPrice=P' },
+      { type:'price', name:'DPrice=S',  desc:'Prix journaliers des sous-postes', path:'/api/xdevices.json', params:[], qs:'DPrice=S' }
+    ]},
+    { id:'status', label:'Status', desc:'Fichiers status', color:'#aaaaaa', cmds:[
+      { type:'status', name:'status.json (admin)', desc:'Toutes les variables du device', path:'/admin/status.json', params:[], specialUrl:true },
+      { type:'status', name:'status.xml (admin)',  desc:'Format XML',                     path:'/admin/status.xml', params:[], specialUrl:true },
+      { type:'status', name:'status.json (user)',  desc:'Accès utilisateur',              path:'/user/status.json', params:[], specialUrl:true },
+      { type:'status', name:'Reset',               desc:'Redémarrer le device',           path:'/api/xdevices.json', qs:'Reset', params:[] }
+    ]}
+  ];
+
+  // Associe une classe CSS au badge selon le type de commande
+  function badgeClass(type) {
+    const map = { get:'mb-get', set:'mb-set', clear:'mb-clear', toggle:'mb-toggle', index:'mb-index', price:'mb-price', status:'mb-status' };
+    return map[type] || 'mb-get';
+  }
+  function badgeLabel(type) { return type.toUpperCase(); }
+
+  let activeGrp = GROUPS[0].id;
+
+  // ============================================================
+  // GESTION DE LA CONFIGURATION (localStorage)
+  // ============================================================
+  function ip()      { return document.getElementById('ip-in').value.trim() || 'RT2'; }
+  function apikey()  { return document.getElementById('apikey-input').value.trim(); }
+  function prot()    { return document.getElementById('prot-sel').value; }
+
+  function loadConf() {
+    document.getElementById('ip-in').value       = localStorage.getItem('edrt2_ip')     || '';
+    document.getElementById('apikey-input').value = localStorage.getItem('edrt2_apikey') || '';
+    document.getElementById('prot-sel').value     = localStorage.getItem('edrt2_prot')   || 'http';
+    document.getElementById('sb-target').textContent = prot() + '://' + ip();
+  }
+  function saveConfig() {
+    localStorage.setItem('edrt2_ip',     document.getElementById('ip-in').value);
+    localStorage.setItem('edrt2_apikey', document.getElementById('apikey-input').value);
+    localStorage.setItem('edrt2_prot',   document.getElementById('prot-sel').value);
+    document.getElementById('sb-target').textContent = prot() + '://' + ip();
+  }
+
+  // ============================================================
+  // LOGS SYSTÈME
+  // ============================================================
+  function addSystemLog(msg, isError = false) {
+    const list = document.getElementById('log-list');
+    if (!list) return;
+    const emptyMsg = list.querySelector('.no-log');
+    if (emptyMsg) emptyMsg.remove();
+    const div = document.createElement('div');
+    div.className = 'log-item ' + (isError ? 'err' : 'ok');
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString();
+    div.innerHTML = `<div class="log-t">${timeStr} · système</div>
+                     <div class="log-u" style="color:${isError ? 'var(--delete)' : 'var(--accent)'}">${escapeHtml(msg)}</div>`;
+    list.insertBefore(div, list.firstChild);
+    while (list.children.length > 25) list.removeChild(list.lastChild);
+  }
+
+  // ============================================================
+  // TEST DE CONNEXION (non bloquant)
+  // ============================================================
+  async function testConnection() {
+    const url = `${prot()}://${ip()}/api/xdevices.json?${apikey() ? 'key='+apikey()+'&' : ''}Get=R`;
+    addSystemLog(`🔌 Test de connexion vers ${url}...`);
+    const t0 = Date.now();
+    try {
+      const r = await fetch(url, { mode: 'cors' });
+      const elapsed = Date.now() - t0;
+      if (r.ok) {
+        addSystemLog(`✅ Connexion réussie (${elapsed} ms)`);
+        setDot('ok');
+        setMsg(`✅ Connecté (${elapsed} ms)`);
+      } else {
+        addSystemLog(`❌ Erreur HTTP ${r.status} (${elapsed} ms)`, true);
+        setDot('err');
+        setMsg(`❌ HTTP ${r.status}`);
+      }
+    } catch(e) {
+      addSystemLog(`❌ Connexion impossible : ${e.message}`, true);
+      setDot('err');
+      setMsg(`❌ ${e.message}`);
+    }
+  }
+
+  // ============================================================
+  // REDIMENSIONNEMENT DES PANNEAUX
+  // ============================================================
+  // ==================== REDIMENSIONNEMENT ====================
+  // Règles en % de bodyRow.offsetWidth :
+  //   Démarrage : chaque cadre = 25%
+  //   Barre Left  (Catégories | Commandes) : [10%, 70%]
+  //   Barre Right (Commandes  | Réponse)   : [20%, 90%]
+  //   10% minimum garanti entre les deux barres adjacentes
+  function initResizers() {
+    var bodyRow   = document.getElementById('body-row');
+    var colLeft   = document.getElementById('col-left');
+    var colCenter = document.getElementById('col-center');
+    var colRight  = document.getElementById('col-right');
+    var divLeft   = document.getElementById('div-left');
+    var divRight  = document.getElementById('div-right');
+    var respPanel = document.getElementById('resp-panel');
+    var logPanel  = document.getElementById('log-panel');
+    var hDivider  = document.getElementById('h-divider-resp-log');
+
+    function W() { return bodyRow.offsetWidth; }
+    function px(pct) { return Math.round(W() * pct / 100); }
+    function setW(el, w) { el.style.flex = '0 0 ' + w + 'px'; el.style.minWidth = w + 'px'; }
+    function setH(el, h) { el.style.flex = '0 0 ' + h + 'px'; el.style.minHeight = h + 'px'; }
+
+    // b1 = barre Left  [10%, 70%]
+    // b2 = barre Right [20%, 90%]
+    // Contrainte : b2 >= b1 + 10%
+    function applyBars(b1, b2) {
+      b1 = Math.max(px(10), Math.min(px(70), b1));
+      b2 = Math.max(px(20), Math.min(px(90), b2));
+      b1 = Math.min(b1, b2 - px(10));
+      b2 = Math.max(b2, b1 + px(10));
+      setW(colLeft,   Math.max(1, b1));
+      setW(colCenter, Math.max(1, b2 - b1 - 10));
+      setW(colRight,  Math.max(1, W() - b2 - 10));
+      return [b1, b2];
+    }
+
+    function saveBars(bars) { localStorage.setItem('edrt2_bars', JSON.stringify(bars)); }
+    function loadBars() {
+      try { var s = JSON.parse(localStorage.getItem('edrt2_bars')); if (s && s.length === 2) return s; } catch(e) {}
+      return null;
+    }
+    function setDefault() { saveBars(applyBars(px(25), px(75))); }
+    function getBars() { var s = loadBars(); return s || [px(25), px(75)]; }
+
+    // Efface les anciennes clés incompatibles
+    localStorage.removeItem('edrt2_cols');
+
+    var saved = loadBars();
+    if (saved) { applyBars(saved[0], saved[1]); }
+    else { setTimeout(setDefault, 0); }
+
+    function makeDragger(div, minPct, maxPct, getNewBars) {
+      div.addEventListener('mousedown', function(e) {
+        div.classList.add('dragging');
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+        function onMove(ev) {
+          var pos = Math.max(px(minPct), Math.min(px(maxPct), ev.clientX));
+          saveBars(applyBars.apply(null, getNewBars(pos)));
+        }
+        function onUp() {
+          div.classList.remove('dragging');
+          document.body.style.cursor = '';
+          document.body.style.userSelect = '';
+          document.removeEventListener('mousemove', onMove);
+          document.removeEventListener('mouseup', onUp);
+        }
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+        e.preventDefault();
+      });
+    }
+
+    makeDragger(divLeft,  10, 70, function(pos) { var b = getBars(); return [Math.min(pos, b[1] - px(10)), b[1]]; });
+    makeDragger(divRight, 20, 90, function(pos) { var b = getBars(); return [b[0], Math.max(pos, b[0] + px(10))]; });
+
+    // Diviseur vertical Réponse / Historique (dans col-right)
+    var MIN_RESP_H = 80, MIN_LOG_H = 60;
+    function setDefaultVert() {
+      var total = colRight.offsetHeight - 10;
+      var hResp = Math.max(MIN_RESP_H, Math.floor(total * 0.6));
+      setH(respPanel, hResp); setH(logPanel, Math.max(MIN_LOG_H, total - hResp));
+    }
+    try {
+      var sv = JSON.parse(localStorage.getItem('edrt2_vert'));
+      if (sv && sv[0]) {
+        var total = colRight.offsetHeight - 10;
+        var hResp = Math.max(MIN_RESP_H, Math.min(total - MIN_LOG_H, sv[0]));
+        setH(respPanel, hResp); setH(logPanel, total - hResp);
+      } else { setTimeout(setDefaultVert, 80); }
+    } catch(e) { setTimeout(setDefaultVert, 80); }
+
+    hDivider.addEventListener('mousedown', function(e) {
+      hDivider.classList.add('dragging');
+      document.body.style.cursor = 'row-resize';
+      document.body.style.userSelect = 'none';
+      function onMove(ev) {
+        var ref   = respPanel.getBoundingClientRect().top;
+        var total = respPanel.offsetHeight + 10 + logPanel.offsetHeight;
+        var pos   = ev.clientY - ref;
+        var hResp = Math.max(MIN_RESP_H, Math.min(total - 10 - MIN_LOG_H, pos));
+        setH(respPanel, hResp); setH(logPanel, total - 10 - hResp);
+        localStorage.setItem('edrt2_vert', JSON.stringify([hResp]));
+      }
+      function onUp() {
+        hDivider.classList.remove('dragging');
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+      }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+      e.preventDefault();
+    });
+
+    window.addEventListener('resize', setDefault);
+  }
+
+  // ============================================================
+  // RENDU DES GROUPES ET COMMANDES
+  // ============================================================
+  function renderGroups() {
+    document.getElementById('grp-list').innerHTML = GROUPS.map(g => `<div class="gi ${g.id === activeGrp ? 'active' : ''}" onclick="selectGrp('${g.id}')"><div class="gi-dot" style="background:${g.color}"></div><div><div class="gi-label" style="color:${g.id === activeGrp ? g.color : 'var(--text)'}">${escapeHtml(g.label)}</div><div class="gi-desc">${escapeHtml(g.desc)}</div></div></div>`).join('');
+  }
+  function selectGrp(id) { activeGrp = id; renderGroups(); const g = GROUPS.find(x => x.id === id); document.getElementById('center-title').textContent = g.label; document.getElementById('cmd-count').textContent = g.cmds.length + ' commande' + (g.cmds.length > 1 ? 's' : ''); renderCmds(g); }
+
+  function renderCmds(g) {
+    document.getElementById('cmd-list').innerHTML = g.cmds.map((c, i) => {
+      const bc = badgeClass(c.type);
+      const paramsHtml = (c.params || []).map(p => {
+        if (p.type === 'select') return `<div class="frow"><label>${escapeHtml(p.label)}</label><select id="${g.id}-${i}-${p.id}" onchange="rebuild('${g.id}',${i})">${p.options.map(o => `<option value="${escapeHtml(o)}">${escapeHtml(o)}</option>`).join('')}</select></div>`;
+        return `<div class="frow"><label>${escapeHtml(p.label)}</label><input type="text" id="${g.id}-${i}-${p.id}" placeholder="${escapeHtml(p.ph)}" oninput="rebuild('${g.id}',${i})">${p.hint ? `<span class="fhint">${escapeHtml(p.hint)}</span>` : ''}</div>`;
+      }).join('');
+      return `<div class="card" id="card-${g.id}-${i}"><div class="card-head" onclick="toggleCard('${g.id}',${i})"><span class="mb ${bc}">${badgeLabel(c.type)}</span><span class="cn">${escapeHtml(c.name)}</span><span class="cd">${escapeHtml(c.desc)}</span><span class="chev">▶</span></div><div class="card-body">${paramsHtml}<div class="url-box" id="up-${g.id}-${i}"></div><div class="card-btns"><button class="btn btn-go btn-sm" onclick="sendCmd('${g.id}',${i})">Envoyer</button><button class="btn btn-sm btn-copy" onclick="copyUrl('${g.id}',${i})">Copier URL</button></div></div></div>`;
+    }).join('');
+    g.cmds.forEach((_, i) => rebuild(g.id, i));
+  }
+  function toggleCard(gid, i) { document.getElementById(`card-${gid}-${i}`).classList.toggle('open'); } // plus de rebuild inutile
+  function expandAll() { document.querySelectorAll('.card').forEach(c => c.classList.add('open')); const g = GROUPS.find(x => x.id === activeGrp); if (g) g.cmds.forEach((_, i) => rebuild(activeGrp, i)); }
+  function collapseAll() { document.querySelectorAll('.card').forEach(c => c.classList.remove('open')); }
+
+  // ============================================================
+  // CONSTRUCTION DES URLs
+  // ============================================================
+  function buildUrl(gid, i) {
+    const g = GROUPS.find(x => x.id === gid);
+    const c = g.cmds[i];
+    if (c.specialUrl) return `${prot()}://${ip()}${c.path}`;
+    let qs = c.qs || '';
+    if (c.buildQs) {
+      const vals = {};
+      (c.params || []).forEach(p => { const el = document.getElementById(`${gid}-${i}-${p.id}`); if (el) vals[p.id] = el.value.trim(); });
+      qs = c.buildQs(vals);
+    }
+    const key = apikey();
+    const base = `${prot()}://${ip()}${c.path}`;
+    const params = [];
+    if (key) params.push(`key=${encodeURIComponent(key)}`);
+    if (qs) params.push(qs);
+    return params.length ? base + '?' + params.join('&') : base;
+  }
+  function rebuild(gid, i) {
+    const el = document.getElementById(`up-${gid}-${i}`);
+    if (!el) return;
+    const url = buildUrl(gid, i);
+    // Affichage sécurisé de l'URL (échappement HTML)
+    el.innerHTML = `<span class="dm">${escapeHtml(`${prot()}://${ip()}`)}</span>${escapeHtml(url.replace(/^https?:\/\/[^/]+/, ''))}`;
+  }
+  function rebuildActive() { const g = GROUPS.find(x => x.id === activeGrp); if (g) g.cmds.forEach((_, i) => rebuild(activeGrp, i)); }
+
+  // ============================================================
+  // ENVOI DES REQUÊTES HTTP
+  // ============================================================
+  async function sendCmd(gid, i) {
+    const url = buildUrl(gid, i);
+    setMsg('Envoi…');
+    const t0 = Date.now();
+    try {
+      const r = await fetch(url, { mode: 'cors' });
+      const elapsed = Date.now() - t0;
+      let txt;
+      const ct = r.headers.get('content-type') || '';
+      if (ct.includes('json')) { const j = await r.json(); txt = JSON.stringify(j, null, 2); }
+      else txt = await r.text();
+      setResp(txt || '(vide)');
+      document.getElementById('resp-stat').textContent = r.status + ' ' + r.statusText;
+      addLog(url, 'GET', r.ok, r.status, elapsed);
+      setDot(r.ok ? 'ok' : 'err');
+      setMsg('Réponse reçue en ' + elapsed + ' ms');
+    } catch(e) {
+      setResp('Erreur : ' + e.message);
+      document.getElementById('resp-stat').textContent = 'Erreur';
+      addLog(url, 'GET', false, 0, Date.now() - t0);
+      setDot('err');
+      setMsg('Échec de la requête');
+    }
+    document.getElementById('sb-last').textContent = new Date().toLocaleTimeString();
+  }
+
+  // ============================================================
+  // UTILITAIRES (affichage, historique, presse-papiers)
+  // ============================================================
+  function setResp(t) { document.getElementById('resp-area').value = t; }
+  function clearResp() { setResp(''); document.getElementById('resp-stat').textContent = '-'; }
+  function copyResp() { navigator.clipboard.writeText(document.getElementById('resp-area').value).catch(()=>{}); setMsg('Copié !'); }
+  function copyUrl(gid, i) { navigator.clipboard.writeText(buildUrl(gid, i)).catch(()=>{}); setMsg('URL copiée'); }
+  function setMsg(m) { document.getElementById('sbmsg').textContent = m; }
+  function setDot(s) { document.getElementById('main-dot').className = 'status-dot ' + (s || ''); }
+  
+  function addLog(url, method, ok, status, ms) {
+    const list = document.getElementById('log-list');
+    list.querySelector('.no-log')?.remove();
+    const div = document.createElement('div');
+    div.className = 'log-item ' + (ok ? 'ok' : 'err');
+    div.innerHTML = `<div class="log-t">${new Date().toLocaleTimeString()} · ${method} · ${status} · ${ms}ms</div><div class="log-u" title="${escapeHtml(url)}">${escapeHtml(url)}</div>`;
+    list.insertBefore(div, list.firstChild);
+    while (list.children.length > 25) list.removeChild(list.lastChild);
+  }
+  function clearLogs() { document.getElementById('log-list').innerHTML = '<div class="no-log">Aucune requête envoyée</div>'; }
+
+  window.onload = () => { loadConf(); initResizers(); renderGroups(); selectGrp(GROUPS[0].id); setDot(''); setMsg('Prêt – vous pouvez envoyer des commandes ou tester la connexion.'); };
+</script>
+
+</body>
+
+</html>

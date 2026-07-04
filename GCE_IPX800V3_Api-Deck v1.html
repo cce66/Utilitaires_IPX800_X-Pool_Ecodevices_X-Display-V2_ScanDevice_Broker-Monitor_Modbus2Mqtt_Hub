@@ -1,0 +1,817 @@
+<!--======================================================================-->
+<!--  IPX800 V3 - API-DECK v1 - GCE Electronics           maj 07/05 2026  -->
+<!--======================================================================-->
+
+<!DOCTYPE html>
+<html lang="fr" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <title>IPX800 V1/V2/V3 - API Deck M2M &amp; API v1</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+  
+  <style>
+    /* ---------- 1. RÉINITIALISATION ET VARIABLES GLOBALES ---------- */
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    :root {
+      --bg: #0f1117; --panel: #181c27; --border: #2a2f3e;
+      --accent: #6CC04A; --accent2: #0090ff; --accent3: #ff6b35; --accent4: #a855f7;
+      --text: #d4d8e8; --text-dim: #7a809a; --header-h: 58px; --gap: 14px;
+    }
+    body { background: var(--bg); color: var(--text); font-family: 'IBM Plex Sans', sans-serif; font-size: 14px; overflow: hidden; }
+    header {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 200; height: var(--header-h);
+      display: flex; align-items: center; gap: 12px; padding: 0 20px;
+      background: var(--panel); border-bottom: 1px solid var(--border);
+      box-shadow: 0 2px 20px rgba(0,0,0,0.6);
+    }
+    .logo { display: flex; align-items: center; gap: 10px; }
+    .logo-icon {
+      width: 110px; height: 32px; background: linear-gradient(135deg, #388bfd 0%, #3fb950 55%);
+      border-radius: 6px; display: flex; align-items: center; justify-content: center;
+      font-family: 'IBM Plex Mono', monospace; font-weight: 600; font-size: 11px; color: #000;
+    }
+    header h1 { font-family: 'IBM Plex Mono', monospace; font-size: 0.95rem; font-weight: 600; white-space: nowrap; }
+    .header-sep { flex: 1; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-dim); transition: background 0.3s; }
+    .status-dot.ok { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+    .status-dot.err { background: var(--accent3); box-shadow: 0 0 8px var(--accent3); }
+    .api-toggle {
+      display: flex; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; overflow: hidden;
+    }
+    .api-toggle button {
+      height: 28px; padding: 0 12px; border: none; cursor: pointer;
+      font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 600;
+      background: transparent; color: var(--text-dim);
+    }
+    .api-toggle button.active { background: var(--text-dim); color: #fff; }
+    .cfg-field { display: flex; align-items: center; gap: 6px; }
+    .cfg-field label {
+      font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-dim);
+      text-transform: uppercase; white-space: nowrap;
+    }
+    .cfg-field input, .cfg-field select {
+      height: 30px; background: var(--bg); border: 1px solid var(--border); border-radius: 5px;
+      color: var(--accent); padding: 0 8px; font-family: 'IBM Plex Mono', monospace; font-size: 12px;
+    }
+    #ip-input { width: 120px; }
+    #api-type-select { width: 70px; }
+    #proxyIp { width: 120px; }
+    #proxyPort { width: 60px; }
+    .cfg-field input[type="checkbox"] { margin: 0; vertical-align: middle; }
+    .cfg-field:has(input[type="checkbox"]) label {
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .btn {
+      height: 30px; padding: 0 12px; border: none; border-radius: 5px; cursor: pointer;
+      font-family: 'IBM Plex Sans', sans-serif; font-size: 12px; font-weight: 600;
+      transition: opacity 0.2s, transform 0.1s; white-space: nowrap;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary { background: var(--accent); color: #000; }
+    .btn-secondary { background: var(--border); color: var(--text); }
+    .btn-sm { height: 22px; padding: 0 9px; font-size: 10px; }
+    #wrapper {
+      position: fixed; top: var(--header-h); left: 0; right: 0; bottom: 0;
+      display: flex; flex-direction: column; gap: var(--gap); padding: var(--gap);
+    }
+    #body-row { flex: 1; min-height: 0; min-width: 0; display: flex; overflow: hidden; }
+    .divider { flex-shrink: 0; width: 10px; cursor: col-resize; display: flex; align-items: center; justify-content: center; }
+    .divider::after { content: ''; width: 2px; height: 44px; border-radius: 2px; background: var(--border); }
+    .divider:hover::after, .divider.dragging::after { background: var(--accent4); height: 64px; }
+    .vert-divider { flex-shrink: 0; height: 10px; cursor: row-resize; display: flex; align-items: center; justify-content: center; }
+    .vert-divider::after { content: ''; width: 44px; height: 2px; border-radius: 2px; background: var(--border); }
+    .vert-divider:hover::after, .vert-divider.dragging::after { background: var(--accent4); width: 64px; }
+    .col { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+    .panel {
+      background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+      display: flex; flex-direction: column; overflow: hidden; min-height: 0;
+    }
+    .panel-header {
+      display: flex; align-items: center; gap: 8px; padding: 0 14px; height: 36px;
+      background: #1e2333; border-bottom: 1px solid var(--border); flex-shrink: 0;
+    }
+    .panel-header span { font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-dim); }
+    .panel-badge { background: var(--bg); border: 1px solid var(--border); border-radius: 20px; padding: 1px 8px; font-size: 10px; }
+    .ph-right { margin-left: auto; display: flex; gap: 5px; }
+    .panel-body { flex: 1; overflow-y: auto; min-height: 0; }
+    .group-item { padding: 10px 16px; cursor: pointer; border-bottom: 1px solid var(--border); display: flex; gap: 10px; transition: background 0.15s; }
+    .group-item:hover { background: rgba(255,255,255,0.04); }
+    .group-item.active { background: rgba(108,192,74,0.08); border-right: 2px solid var(--accent); }
+    .group-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .cmd-list { padding: 10px; display: flex; flex-direction: column; gap: 6px; }
+    .cmd-card { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+    .cmd-card-head { display: flex; align-items: center; gap: 10px; padding: 10px 14px; cursor: pointer; }
+    .method-badge { font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 4px; min-width: 46px; text-align: center; }
+    .mb-m2m { background: rgba(108,192,74,0.18); color: var(--accent); }
+    .mb-http { background: rgba(0,144,255,0.18); color: var(--accent2); }
+    .mb-get { background: rgba(0,144,255,0.18); color: var(--accent2); }
+    .mb-set { background: rgba(108,192,74,0.18); color: var(--accent); }
+    .mb-cfg { background: rgba(168,85,247,0.18); color: var(--accent4); }
+    .cmd-card-head .cmd-name { font-family: 'IBM Plex Mono', monospace; font-size: 12px; flex:1; }
+    .cmd-card-head .cmd-desc { font-size: 11px; color: var(--text-dim); flex:2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cmd-chevron { color: var(--text-dim); transition: transform 0.2s; }
+    .cmd-card.expanded .cmd-chevron { transform: rotate(90deg); }
+    .cmd-card-body { display: none; padding: 12px 14px; border-top: 1px solid var(--border); flex-direction: column; gap: 10px; }
+    .cmd-card.expanded .cmd-card-body { display: flex; }
+    .field-row { display: flex; align-items: center; gap: 10px; }
+    .field-row label { width: 120px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-dim); flex-shrink: 0; }
+    .field-row input, .field-row select { flex:1; height: 28px; background: var(--panel); border: 1px solid var(--border); border-radius: 4px; color: var(--text); padding: 0 8px; font-family: 'IBM Plex Mono', monospace; }
+    .url-preview { font-family: 'IBM Plex Mono', monospace; font-size: 11px; background: #0a0d14; border: 1px solid var(--border); border-radius: 4px; padding: 8px 10px; word-break: break-all; }
+    .url-preview.http-url { color: var(--accent2); }
+    .note-box { font-size: 11px; color: var(--text-dim); background: #1a1f2e; border: 1px solid var(--border); border-radius: 4px; padding: 7px 10px; }
+    .cmd-actions { display: flex; gap: 8px; margin-top: 4px; }
+    #col-right { display: flex; flex-direction: column; gap: 0; min-height: 0; min-width: 0; overflow: hidden; }
+    #response-panel, #logs-panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+    #response-area { resize: none; flex:1; background: #0a0d14; border: none; color: var(--accent); font-family: 'IBM Plex Mono', monospace; font-size: 11px; padding: 12px; outline: none; line-height: 1.7; }
+    .log-entry { padding: 8px 12px; border-bottom: 1px solid var(--border); }
+    .log-entry.ok .log-url { color: var(--accent); }
+    .log-entry.ok2 .log-url { color: var(--accent2); }
+    .log-entry.err .log-url { color: var(--accent3); }
+    #status-bar {
+      flex-shrink:0; display: flex; align-items: center; gap: 16px; padding: 0 16px;
+      height: 28px; background: var(--panel); border: 1px solid var(--border); border-radius: 6px;
+      font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text-dim);
+    }
+    #status-bar .sb-item { display: flex; align-items: center; gap: 6px; }
+    #status-bar .sb-val { color: var(--text); }
+    #status-msg { margin-left: auto; }
+    .modal {
+      display: none; position: fixed; top:0; left:0; width:100%; height:100%;
+      background: rgba(0,0,0,0.8); z-index:1000; justify-content: center; align-items: center;
+    }
+    .modal-content {
+      background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+      width: 700px; max-width: 90vw; max-height: 85vh; overflow-y: auto;
+      padding: 20px; font-family: 'IBM Plex Sans', sans-serif; color: var(--text);
+      box-shadow: 0 10px 30px black;
+    }
+    .modal-content h3 { color: var(--accent); margin-top:0; margin-bottom:15px; font-family: 'IBM Plex Mono', monospace; }
+    .modal-content pre { background: #0a0d14; padding:12px; border-radius:8px; overflow-x: auto; font-family: 'IBM Plex Mono', monospace; font-size:12px; color:#aaffaa; border:1px solid var(--border); }
+    .modal-content button { margin-top:20px; }
+    .close-modal { float:right; background:none; border:none; color:var(--text-dim); font-size:24px; cursor:pointer; }
+    .close-modal:hover { color:var(--accent3); }
+  </style>
+  
+</head>
+
+<body>
+
+<header>
+  <div class="logo"><div class="logo-icon">GCE Electronics</div><h1>IPX800 V3 - API Deck M2M &amp; API v1</h1></div>
+  <div class="header-sep"></div>
+  <div class="cfg-field"><label>Protocole</label><select id="api-type-select"><option value="http">HTTP</option><option value="https">HTTPS</option></select></div>
+  <div class="cfg-field"><label>IP</label><input id="ip-input" type="text" placeholder="192.168.1.233"></div>
+  <div class="cfg-field"><label>Mode API</label><div class="api-toggle"><button id="btn-http" class="active">HTTP</button><button id="btn-m2m">M2M</button></div></div>
+  <div class="cfg-field"><label>IP PROXY M2M</label><input id="proxyIp" type="text" placeholder="192.168.1.145"></div>
+  <div class="cfg-field"><label>Port</label><input id="proxyPort" type="text" placeholder="3800"><span style="font-family:monospace; color:var(--text-dim);">/m2m</span></div>
+  <div class="cfg-field"><label><input type="checkbox" id="useProxy"> Activer proxy</label></div>
+  
+  <button id="testConnectionBtn" class="btn btn-primary">Tester</button>
+  <button id="testProxyBtn" class="btn btn-secondary">Tester proxy M2M</button>
+  <div class="status-dot" id="main-dot"></div>
+</header>
+
+<div id="wrapper">
+  <div id="body-row">
+    <div class="col" id="col-left"><div class="panel" style="flex:1"><div class="panel-header"><span>Catégories</span></div><div class="panel-body" id="groups-list"></div></div></div>
+    <div class="divider" id="div-left"></div>
+    <div class="col" id="col-center"><div class="panel" style="flex:1"><div class="panel-header"><span id="builder-title">Commandes</span><div class="panel-badge" id="cmd-count">0 commandes</div><div class="ph-right"><button class="btn btn-secondary btn-sm" onclick="expandAll()">⊞ Tout déplier</button><button class="btn btn-secondary btn-sm" onclick="collapseAll()">⊟ Tout replier</button><button class="btn btn-secondary btn-sm" id="showTutorialBtn">📘 Configuration d'un serveur proxy M2M</button></div></div><div class="panel-body"><div class="cmd-list" id="cmd-list"></div></div></div></div>
+    <div class="divider" id="div-right"></div>
+    <div class="col" id="col-right">
+      <div id="response-panel"><div class="panel-header"><span>Réponse</span><div class="panel-badge" id="resp-status">-</div><div class="ph-right"><button class="btn btn-secondary btn-sm" onclick="copyResponse()">Copier</button><button class="btn btn-secondary btn-sm" onclick="clearResponse()">Effacer</button></div></div><textarea id="response-area" readonly placeholder="La réponse apparaîtra ici..."></textarea></div>
+      <div class="vert-divider" id="vert-divider-resp-log"></div>
+      <div id="logs-panel"><div class="panel-header"><span>Historique</span><div class="ph-right"><button class="btn btn-secondary btn-sm" onclick="clearLogs()">Effacer</button></div></div><div class="panel-body" id="logs-list"><div class="no-log">Aucune requête envoyée</div></div></div>
+    </div>
+  </div>
+  <div id="status-bar">
+    <div class="sb-item">Cible&nbsp;: <span class="sb-val" id="sb-target">-</span></div>
+    <div class="sb-item">Mode: <span class="sb-val" id="sb-mode">HTTP</span></div>
+    <div class="sb-item">Dernière: <span class="sb-val" id="sb-last">-</span></div>
+    <div class="sb-item" id="status-msg"></div>
+  </div>
+</div>
+
+<!-- Modale tutoriel -->
+<div id="tutorialModal" class="modal">
+  <div class="modal-content">
+    <button class="close-modal">&times;</button>
+    <h3>🚀 Créer un serveur proxy HTTP ↔ M2M (Node.js)</h3>
+    <p>Ce serveur fait le pont entre votre navigateur (qui ne peut pas ouvrir de socket TCP brute) et l’IPX800 sur le port <strong>9870</strong>. Il reçoit des requêtes HTTP POST et les transforme en commandes M2M.</p>
+
+    <h4>📦 1. Prérequis</h4>
+    <ul style="margin-left: 20px; margin-bottom: 10px;">
+      <li><strong>Node.js</strong> installé sur la machine qui servira de proxy (celle qui a accès réseau à l’IPX800). Téléchargez-le sur <a href="https://nodejs.org" target="_blank" style="color:var(--accent2)">nodejs.org</a> (version LTS).</li>
+      <li>Un accès réseau depuis cette machine vers l’IPX800 (ping et port 9870 ouvert).</li>
+    </ul>
+
+    <h4>📁 2. Créer le projet et installer les dépendances</h4>
+    <p>Ouvrez un terminal (sur la machine proxy) et exécutez :</p>
+    <pre><code>mkdir m2m-proxy
+cd m2m-proxy
+npm init -y
+npm install express cors</code></pre>
+
+    <h4>✏️ 3. Créer le fichier <code>server.js</code></h4>
+    <p>Copiez-collez ce code (il inclut le support <strong>CORS</strong> pour que votre navigateur accepte les requêtes) :</p>
+    <pre><code>const express = require('express');
+const net = require('net');
+const cors = require('cors');
+const app = express();
+
+app.use(cors());                 // Autorise toutes les origines (indispensable pour une page web locale)
+app.use(express.json());
+
+app.post('/m2m', (req, res) => {
+    const { host, command, port = 9870 } = req.body;
+    if (!command || !host) {
+        return res.status(400).json({ error: 'Missing host or command' });
+    }
+
+    const client = new net.Socket();
+    client.connect(port, host, () => {
+        client.write(command + '\r\n');
+        let response = '';
+        client.on('data', (data) => response += data.toString());
+        client.on('end', () => {
+            res.json({ ok: true, response: response.trim() });
+        });
+        client.on('error', (err) => {
+            res.status(500).json({ error: err.message });
+            client.destroy();
+        });
+        setTimeout(() => client.end(), 500); // Timeout sécurité
+    });
+
+    client.on('error', (err) => {
+        res.status(500).json({ error: `TCP connection failed: ${err.message}` });
+    });
+});
+
+app.listen(3800, () => {
+    console.log('✅ Proxy M2M opérationnel sur http://0.0.0.0:3800/m2m');
+});</code></pre>
+
+    <h4>🚀 4. Démarrer le serveur</h4>
+    <pre><code>node server.js</code></pre>
+    <p>Si tout va bien, vous verrez : <code>✅ Proxy M2M opérationnel sur http://0.0.0.0:3800/m2m</code></p>
+
+    <h4>🔗 5. Configurer l’interface web</h4>
+    <ul style="margin-left: 20px; margin-bottom: 10px;">
+      <li>Dans le champ <strong>« IP PROXY M2M »</strong>, entrez l’adresse IP de la machine où tourne le serveur (ex: <code>192.168.1.145</code>).</li>
+      <li>Dans le champ <strong>« Port »</strong>, entrez le port utilisé (par défaut <code>3800</code>).</li>
+      <li>Cochez <strong>« Activer proxy »</strong>.</li>
+      <li>Laissez le <strong>Mode API</strong> sur <strong>M2M</strong>.</li>
+      <li>Cliquez sur <strong>« Tester proxy M2M »</strong> pour vérifier que tout fonctionne. Vous devriez voir la réponse de l’IPX800 (32 bits).</li>
+    </ul>
+
+    <h4>🐞 Dépannage</h4>
+    <ul style="margin-left: 20px;">
+      <li><strong>Erreur NetworkError / CORS</strong> → Assurez-vous que le serveur utilise bien <code>cors()</code> (code ci-dessus).</li>
+      <li><strong>Connexion refusée</strong> → Vérifiez que le pare‑feu de la machine proxy autorise le port entrant (ex: 3800).</li>
+      <li><strong>Le test HTTP fonctionne mais pas le proxy</strong> → Testez avec <code>curl</code> sur la machine proxy : <br>
+        <code>curl -X POST http://localhost:3800/m2m -H "Content-Type: application/json" -d '{"host":"192.168.1.233","command":"GetOutputs"}'</code>
+      </li>
+      <li><strong>Réponse vide ou tronquée</strong> → Augmentez le timeout dans le code (ex: 1000 ms).</li>
+      <li><strong>La commande Set sortie ne fonctionne pas</strong> → Vérifiez que le numéro de sortie est bien sur deux chiffres (01 à 32). L’interface le formate automatiquement.</li>
+    </ul>
+
+    <p style="margin-top: 20px;"><strong>💡 Une fois le proxy actif, toutes les commandes M2M (Set, Get, BitMask, Reset…) seront envoyées automatiquement depuis l’interface, sans avoir à copier/coller.</strong></p>
+
+    <button id="closeModalBtn" class="btn btn-primary">Fermer</button>
+  </div>
+</div>
+
+<script>
+// ==================== DONNÉES STATIQUES (groupes, commandes) ====================
+const groups = [
+  {
+    id:'sorties', label:'Sorties (relais)', desc:'Commander les 32 sorties', color:'#6CC04A',
+    cmds:[
+      { name:'Set sortie', desc:'Mettre une sortie à 0 ou 1', mode:'both', mb:'mb-set', m2mTpl:'Set{num}{state}{pulse}', httpPath:'/leds.cgi', params:[{id:'num',label:'N° sortie (01-32)',placeholder:'01'},{id:'state',label:'État',type:'select',options:['1 - On','0 - Off']},{id:'pulse',label:'Mode impulsionnel',type:'select',options:['Non (normal)','Oui (ajoute p)']}], httpNote:'/leds.cgi inverse l’état ou lance impulsion' },
+      { name:'Preset sortie', desc:'Forcer état On/Off', mode:'http', mb:'mb-http', httpPath:'/preset.htm', params:[{id:'num',label:'N° sortie (1-32)',placeholder:'1'},{id:'state',label:'État',type:'select',options:['1 - On','0 - Off']}] },
+      { name:'BitMask', desc:'Piloter les 32 sorties', mode:'m2m', mb:'mb-m2m', m2mTpl:'Bit={mask}', params:[{id:'mask',label:'32 bits (0/1)',placeholder:'000...'}] },
+      { name:'GetOut', desc:'État d’une sortie', mode:'m2m', mb:'mb-get', m2mTpl:'GetOut{num}', params:[{id:'num',label:'N° sortie (1-32)',placeholder:'1'}] },
+      { name:'GetOutputs', desc:'État des 32 sorties', mode:'m2m', mb:'mb-get', m2mTpl:'GetOutputs', params:[] },
+      { name:'Config sortie', desc:'Modifier nom, Ta, Tb', mode:'http', mb:'mb-cfg', httpPath:'/protect/settings/output1.htm', params:[{id:'num',label:'N° sortie (1-32)',placeholder:'1'},{id:'name',label:'Nom',placeholder:'Lumiere'},{id:'ta',label:'Ta (x0.1s)',placeholder:'0'},{id:'tb',label:'Tb (x0.1s)',placeholder:'0'}], httpNote:'output=x + relayname=... + delayon=... + delayoff=...' }
+    ]
+  },
+  {
+    id:'entrees', label:'Entrées digitales', desc:'Lire et simuler', color:'#0090ff',
+    cmds:[
+      { name:'GetIn', desc:'État d’une entrée', mode:'m2m', mb:'mb-get', m2mTpl:'GetIn{num}', params:[{id:'num',label:'N° entrée (1-32)',placeholder:'1'}] },
+      { name:'GetInputs', desc:'État des 32 entrées', mode:'m2m', mb:'mb-get', m2mTpl:'GetInputs', params:[] },
+      { name:'Simuler entrée', desc:'Simuler une entrée (9-32)', mode:'http', mb:'mb-http', httpPath:'/leds.cgi', params:[{id:'num',label:'N° entrée (1-32)',placeholder:'12'}], httpNote:'led=99+num' },
+      { name:'Config entrée', desc:'Nom, assignation, mode', mode:'http', mb:'mb-cfg', httpPath:'/protect/assignio/assign1.htm', params:[{id:'num',label:'N° (0-31)',placeholder:'0'},{id:'name',label:'Nom'},{id:'sortie',label:'Sortie assignée'},{id:'mode',label:'Mode',type:'select',options:['0 On/Off','1 Switch','2 VR','3 On','4 Off']},{id:'inv',label:'Inversion',type:'select',options:['0 Non','1 Oui']}] }
+    ]
+  },
+  {
+    id:'analogiques', label:'Entrées analogiques', desc:'Lire et configurer', color:'#f0b400',
+    cmds:[
+      { name:'GetAn', desc:'Valeur analogique', mode:'m2m', mb:'mb-get', m2mTpl:'GetAn{num}', params:[{id:'num',label:'N° (1-4)',placeholder:'1'}] },
+      { name:'Config analogique', desc:'Nom, seuils, capteur', mode:'http', mb:'mb-cfg', httpPath:'/protect/assignio/analog1.htm', params:[{id:'num',label:'N° (0-3)',placeholder:'0'},{id:'name',label:'Nom'},{id:'type',label:'Type capteur',type:'select',options:['0 Brut','1 Tension','2 TC4012','3 SHT lumière','4 SHT temp','5 SHT hum']},{id:'hi',label:'Seuil haut'},{id:'lo',label:'Seuil bas'},{id:'sortie',label:'Sortie assignée'}] }
+    ]
+  },
+  {
+    id:'compteurs', label:'Compteurs', desc:'Lecture et reset', color:'#50c8c8',
+    cmds:[
+      { name:'GetCount', desc:'Valeur compteur', mode:'m2m', mb:'mb-get', m2mTpl:'GetCount{num}', params:[{id:'num',label:'N° (1-3)',placeholder:'1'}] },
+      { name:'ResetCount (M2M)', desc:'Remettre à zéro', mode:'m2m', mb:'mb-set', m2mTpl:'ResetCount{num}', params:[{id:'num',label:'N° (1-3)',placeholder:'1'}] },
+      { name:'Valeur compteur (HTTP)', desc:'Forcer valeur / renommer', mode:'http', mb:'mb-cfg', httpPath:'/protect/assignio/counter.htm', params:[{id:'num',label:'N° (1-3)',placeholder:'1'},{id:'name',label:'Nom'},{id:'val',label:'Valeur forcée'}] }
+    ]
+  },
+  {
+    id:'timers', label:'Timers / Programmation', desc:'Planifier des actions', color:'#bc8cff',
+    cmds:[
+      { name:'Programmer timer', desc:'Action planifiée', mode:'http', mb:'mb-cfg', httpPath:'/protect/timers/timer1.htm', params:[{id:'timer',label:'N° (0-127)'},{id:'day',label:'Jour',type:'select',options:['0 Lundi','1 Mardi','2 Mercredi','3 Jeudi','4 Vendredi','5 Samedi','6 Dimanche','7 Tous','8 Semaine','9 Weekend']},{id:'hh',label:'Heure (HH)'},{id:'mm',label:'Minute (MM)'},{id:'relay',label:'Sortie/Compteur',placeholder:'0-31 sortie, 32-34 compteur'},{id:'action',label:'Action',type:'select',options:['0 Off','1 On','2 Inversion','3 Impulsion','4 Annulation','7 Reset compteur']}] },
+      { name:'Effacer timer', desc:'Réinitialiser timer', mode:'http', mb:'mb-cfg', httpPath:'/protect/timers/timer1.htm', params:[{id:'num',label:'N° (0-127)',placeholder:'0'}] }
+    ]
+  },
+  {
+    id:'ping', label:'Ping Watchdog', desc:'Surveiller IP', color:'#f78166',
+    cmds:[
+      { name:'Config Ping Watchdog', desc:'IP, intervalle, sortie', mode:'http', mb:'mb-cfg', httpPath:'/protect/settings/ping.htm', params:[{id:'ip',label:'IP cible',placeholder:'192.168.1.1'},{id:'time',label:'Intervalle (s)',placeholder:'30'},{id:'retry',label:'Tentatives',placeholder:'3'},{id:'relay',label:'Sortie',placeholder:'0-31'}] }
+    ]
+  },
+  {
+    id:'status', label:'Status / Reset', desc:'État XML et redémarrage', color:'#aaaaaa',
+    cmds:[
+      { name:'status.xml', desc:'Récupérer tous les états', mode:'http', mb:'mb-get', httpPath:'/status.xml', params:[] },
+      { name:'Reset (M2M)', desc:'Redémarrer IPX800', mode:'m2m', mb:'mb-set', m2mTpl:'Reset', params:[] }
+    ]
+  }
+];
+
+// Variables globales
+let activeGroup = 'sorties';
+let apiMode = 'http';
+let vertRatio = 0.6;
+
+// Helper DOM
+function ip() { return document.getElementById('ip-input').value || 'IPX800_V3'; }
+function prot() { return document.getElementById('api-type-select').value; }
+function pv(gid,i,pid) { const el = document.getElementById(`${gid}-${i}-${pid}`); return el ? el.value.trim() : ''; }
+
+// Proxy : construction de l'URL à partir de l'IP et du port
+function getProxyUrl() {
+  const ipProxy = document.getElementById('proxyIp').value.trim();
+  const port = document.getElementById('proxyPort').value.trim();
+  if (!ipProxy || !port) return '';
+  return `http://${ipProxy}:${port}/m2m`;
+}
+function isProxyActive() {
+  return document.getElementById('useProxy').checked && getProxyUrl() !== '';
+}
+
+// Sauvegarde config
+function saveConfig() {
+  localStorage.setItem('ipx3_ip', ip());
+  localStorage.setItem('ipx3_prot', prot());
+  localStorage.setItem('ipx3_proxyIp', document.getElementById('proxyIp').value);
+  localStorage.setItem('ipx3_proxyPort', document.getElementById('proxyPort').value);
+  localStorage.setItem('ipx3_useProxy', isProxyActive());
+}
+function loadConfig() {
+  document.getElementById('ip-input').value = localStorage.getItem('ipx3_ip') || '';
+  document.getElementById('api-type-select').value = localStorage.getItem('ipx3_prot') || 'http';
+  document.getElementById('proxyIp').value = localStorage.getItem('ipx3_proxyIp') || '';
+  document.getElementById('proxyPort').value = localStorage.getItem('ipx3_proxyPort') || '';
+  document.getElementById('useProxy').checked = (localStorage.getItem('ipx3_useProxy') === 'true');
+  updateSbTarget();
+}
+function updateSbTarget() { document.getElementById('sb-target').textContent = prot()+'://'+ip(); }
+
+// Test de connexion HTTP
+async function testConnection() {
+  const url = `${prot()}://${ip()}/status.xml`;
+  addSystemLog(`🔍 Test HTTP vers ${url}...`);
+  setStatus('Test HTTP en cours...');
+  try {
+    const r = await fetch(url, { mode:'cors' });
+    if (r.ok) {
+      addSystemLog(`✅ Test HTTP réussi (${r.status})`);
+      document.getElementById('main-dot').className = 'status-dot ok';
+      setStatus(`Test HTTP OK – IPX800 accessible`);
+      return true;
+    } else {
+      addSystemLog(`❌ Test HTTP échec ${r.status}`, true);
+      document.getElementById('main-dot').className = 'status-dot err';
+      setStatus(`Erreur HTTP ${r.status}`);
+      return false;
+    }
+  } catch(e) {
+    addSystemLog(`❌ Test HTTP impossible : ${e.message}`, true);
+    document.getElementById('main-dot').className = 'status-dot err';
+    setStatus(`Échec HTTP : ${e.message}`);
+    return false;
+  }
+}
+
+// Test du proxy M2M
+async function testProxy() {
+  const proxyUrl = getProxyUrl();
+  if (!proxyUrl) {
+    addSystemLog(`❌ Test proxy impossible : IP ou port manquant.`, true);
+    setResponse("❌ Veuillez saisir l'IP et le port du proxy.");
+    document.getElementById('main-dot').className = 'status-dot err';
+    setStatus('Proxy non configuré');
+    return false;
+  }
+  const targetHost = ip();
+  addSystemLog(`🔍 Test proxy M2M : ${proxyUrl} → GetOutputs sur ${targetHost}...`);
+  setStatus('Test proxy M2M en cours...');
+  try {
+    const fetchResp = await fetch(proxyUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ host: targetHost, command: 'GetOutputs' })
+    });
+    const data = await fetchResp.json();
+    if (data.ok) {
+      const responseBits = data.response;
+      addSystemLog(`✅ Test proxy réussi : réponse = ${responseBits}`);
+      setResponse(`Proxy M2M OK\nCommande: GetOutputs\nRéponse IPX800: ${responseBits}\n(32 bits, 0=off, 1=on)`);
+      document.getElementById('main-dot').className = 'status-dot ok';
+      setStatus(`Proxy M2M fonctionnel (${responseBits.length} bits)`);
+      return true;
+    } else {
+      addSystemLog(`❌ Test proxy échec : ${data.error}`, true);
+      setResponse(`Erreur proxy : ${data.error}`);
+      document.getElementById('main-dot').className = 'status-dot err';
+      setStatus(`Proxy M2M : ${data.error}`);
+      return false;
+    }
+  } catch(e) {
+    addSystemLog(`❌ Test proxy impossible : ${e.message}`, true);
+    setResponse(`Impossible de contacter le proxy : ${e.message}`);
+    document.getElementById('main-dot').className = 'status-dot err';
+    setStatus(`Proxy injoignable`);
+    return false;
+  }
+}
+
+function onConfigChange() { saveConfig(); updateSbTarget(); updateUrl(); }
+function setApiMode(m) {
+  apiMode = m;
+  document.getElementById('btn-http').className = m==='http' ? 'active' : '';
+  document.getElementById('btn-m2m').className = m==='m2m' ? 'active' : '';
+  document.getElementById('sb-mode').textContent = m.toUpperCase();
+  const g = groups.find(x=>x.id===activeGroup);
+  if(g) renderCmds(g);
+  updateUrl();
+}
+
+// Construction commande (avec formatage à 2 chiffres pour Set sortie)
+function buildCmd(gid, i) {
+  const g = groups.find(x => x.id === gid);
+  const c = g.cmds[i];
+  const base = prot()+'://'+ip();
+  if (c.mode === 'm2m' || (c.mode === 'both' && apiMode === 'm2m')) {
+    let tpl = c.m2mTpl || '';
+    c.params.forEach(p => {
+      let v = pv(gid,i,p.id);
+      if (p.type === 'select') { const el = document.getElementById(`${gid}-${i}-${p.id}`); v = el ? el.value : '0'; }
+      if (p.id === 'state') v = v.toString();
+      if (p.id === 'pulse') v = v === '1' ? 'p' : '';
+      // Formatage à 2 chiffres pour le numéro de sortie (Set sortie)
+      if (p.id === 'num' && c.name === 'Set sortie') {
+        let numInt = parseInt(v, 10);
+        if (isNaN(numInt)) numInt = 1;
+        v = numInt.toString().padStart(2, '0');
+      }
+      tpl = tpl.replace(`{${p.id}}`, v);
+    });
+    return { type:'m2m', raw:tpl, display:tpl };
+  }
+  let path = c.httpPath || '/leds.cgi';
+  let qp = [];
+  switch(c.name) {
+    case 'Set sortie': { let num = parseInt(pv(gid,i,'num'))||1; qp.push(`led=${num-1}`); break; }
+    case 'Preset sortie': qp.push(`set${pv(gid,i,'num')||'1'}=${pv(gid,i,'state')||'0'}`); break;
+    case 'Simuler entrée': { let num = parseInt(pv(gid,i,'num'))||1; qp.push(`led=${99+num}`); break; }
+    case 'Config entrée': {
+      qp.push(`input=${pv(gid,i,'num')||'0'}`);
+      let name = pv(gid,i,'name'); if(name) qp.push(`inputname=${encodeURIComponent(name)}`);
+      let s = pv(gid,i,'sortie'); if(s) qp.push(`l${s}=1`);
+      let m = pv(gid,i,'mode')||'0'; qp.push(`mode=${m}`);
+      if(pv(gid,i,'inv')==='1') qp.push('inv=1');
+      break;
+    }
+    case 'Config sortie': {
+      qp.push(`output=${pv(gid,i,'num')||'1'}`);
+      let name = pv(gid,i,'name'); if(name) qp.push(`relayname=${encodeURIComponent(name)}`);
+      let ta = pv(gid,i,'ta'); if(ta) qp.push(`delayon=${ta}`);
+      let tb = pv(gid,i,'tb'); if(tb) qp.push(`delayoff=${tb}`);
+      break;
+    }
+    case 'Config analogique': {
+      qp.push(`analog=${pv(gid,i,'num')||'0'}`);
+      let name = pv(gid,i,'name'); if(name) qp.push(`name=${encodeURIComponent(name)}`);
+      let typ = pv(gid,i,'type')||'0'; qp.push(`selectinput=${typ}`);
+      let hi = pv(gid,i,'hi'); if(hi) qp.push(`hi=${hi}`);
+      let lo = pv(gid,i,'lo'); if(lo) qp.push(`lo=${lo}`);
+      let s = pv(gid,i,'sortie'); if(s) qp.push(`lka${s}=1`);
+      break;
+    }
+    case 'Valeur compteur (HTTP)': {
+      let num = pv(gid,i,'num')||'1';
+      let name = pv(gid,i,'name'); if(name) qp.push(`countername${num}=${encodeURIComponent(name)}`);
+      let val = pv(gid,i,'val'); if(val!=='') qp.push(`counter${num}=${val}`);
+      break;
+    }
+    case 'Programmer timer': {
+      qp.push(`timer=${pv(gid,i,'timer')||'0'}`);
+      qp.push(`day=${pv(gid,i,'day')||'0'}`);
+      let hh = (pv(gid,i,'hh')||'08').padStart(2,'0');
+      let mm = (pv(gid,i,'mm')||'00').padStart(2,'0');
+      qp.push(`time=${hh}%3A${mm}`);
+      qp.push(`relay=${pv(gid,i,'relay')||'0'}`);
+      qp.push(`action=${pv(gid,i,'action')||'0'}`);
+      break;
+    }
+    case 'Effacer timer': qp.push(`erase=${pv(gid,i,'num')||'0'}`); break;
+    case 'Config Ping Watchdog': {
+      qp.push(`pingip=${pv(gid,i,'ip')||'192.168.1.1'}`);
+      qp.push(`pingtime=${pv(gid,i,'time')||'30'}`);
+      qp.push(`pingretry=${pv(gid,i,'retry')||'3'}`);
+      qp.push(`prelay=${pv(gid,i,'relay')||'0'}`);
+      break;
+    }
+    default: break;
+  }
+  let qs = qp.length ? '?'+qp.join('&') : '';
+  let full = base + path + qs;
+  return { type:'http', raw:full, display:full };
+}
+
+function rebuildUrl(gid,i) {
+  const el = document.getElementById(`url-preview-${gid}-${i}`);
+  if(!el) return;
+  const res = buildCmd(gid,i);
+  if(res.type === 'm2m') el.innerHTML = `<span class="url-dim">[TCP:9870]</span> ${res.raw}`;
+  else el.innerHTML = `<span class="url-dim">${prot()}://${ip()}</span>${res.raw.replace(/^https?:\/\/[^/]+/,'')}`;
+}
+
+function renderCmds(g) {
+  let html = '';
+  g.cmds.forEach((c,i)=>{
+    let paramsHtml = c.params.map(p=>{
+      if(p.type==='select') return `<div class="field-row"><label>${p.label}</label><select id="${g.id}-${i}-${p.id}" onchange="rebuildUrl('${g.id}',${i})">${p.options.map((o,oi)=>`<option value="${oi}">${o}</option>`).join('')}</select></div>`;
+      return `<div class="field-row"><label>${p.label}</label><input type="text" id="${g.id}-${i}-${p.id}" placeholder="${p.placeholder||''}" oninput="rebuildUrl('${g.id}',${i})">${p.hint?`<span class="field-hint">${p.hint}</span>`:''}</div>`;
+    }).join('');
+    let noteHtml = c.httpNote ? `<div class="note-box">ℹ️ ${c.httpNote}</div>` : '';
+    let modeLabel = c.mode==='both'?'M2M+HTTP':(c.mode==='m2m'?'M2M':'HTTP');
+    html += `<div class="cmd-card" id="card-${g.id}-${i}">
+      <div class="cmd-card-head" onclick="toggleCard('${g.id}',${i})">
+        <span class="method-badge ${c.mb}">${modeLabel}</span>
+        <span class="cmd-name">${c.name}</span>
+        <span class="cmd-desc">${c.desc}</span>
+        <span class="cmd-chevron">▶</span>
+      </div>
+      <div class="cmd-card-body">
+        ${paramsHtml}${noteHtml}
+        <div class="url-preview" id="url-preview-${g.id}-${i}"></div>
+        <div class="cmd-actions"><button class="btn btn-primary" onclick="sendCmd('${g.id}',${i})">Envoyer</button><button class="btn btn-secondary" onclick="copyUrl('${g.id}',${i})">Copier URL</button></div>
+      </div>
+    </div>`;
+  });
+  document.getElementById('cmd-list').innerHTML = html;
+  g.cmds.forEach((_,i)=>rebuildUrl(g.id,i));
+}
+
+// Envoi commande (avec proxy M2M)
+async function sendCmd(gid,i) {
+  const res = buildCmd(gid,i);
+  const t0 = Date.now();
+  setStatus('Envoi en cours...');
+  if(res.type === 'm2m') {
+    if (isProxyActive()) {
+      const proxyUrl = getProxyUrl();
+      try {
+        const fetchResp = await fetch(proxyUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ host: ip(), command: res.raw })
+        });
+        const elapsed = Date.now() - t0;
+        const data = await fetchResp.json();
+        if (data.ok) {
+          setResponse(data.response);
+          logEntry(`[Proxy] ${res.raw}`, true, 'M2M via proxy', elapsed);
+          document.getElementById('resp-status').textContent = 'M2M OK';
+          setDot('ok');
+          setStatus(`Réponse proxy en ${elapsed} ms`);
+        } else {
+          setResponse(`Erreur proxy : ${data.error}`);
+          logEntry(`[Proxy] ${res.raw}`, false, data.error, elapsed);
+          document.getElementById('resp-status').textContent = 'Proxy error';
+          setDot('err');
+        }
+      } catch(e) {
+        setResponse(`Impossible de contacter le proxy : ${e.message}`);
+        logEntry(res.raw, false, 'Proxy unreachable', Date.now()-t0);
+        document.getElementById('resp-status').textContent = 'Proxy down';
+        setDot('err');
+      }
+    } else {
+      setResponse(`⚠️ Commande M2M (TCP port 9870) :\n\n${res.raw}\n\nUtilisez un client TCP (Telnet/netcat) ou activez le proxy avec l'IP et le port.`);
+      document.getElementById('resp-status').textContent = 'M2M (copy)';
+      logEntry(res.raw, true, 'M2M', Date.now()-t0);
+      setStatus('Commande M2M prête (envoi TCP externe)');
+    }
+    document.getElementById('sb-last').textContent = new Date().toLocaleTimeString();
+    return;
+  }
+  // Mode HTTP
+  try {
+    const r = await fetch(res.raw, { mode:'cors' });
+    const elapsed = Date.now()-t0;
+    const body = await r.text();
+    setResponse(body);
+    logEntry(res.raw, r.ok, r.status, elapsed);
+    document.getElementById('resp-status').textContent = r.status+' '+r.statusText;
+    setDot(r.ok ? 'ok' : 'err');
+    setStatus(`Réponse ${r.status} en ${elapsed} ms`);
+  } catch(e) {
+    setResponse('Erreur : '+e.message);
+    logEntry(res.raw, false, 0, Date.now()-t0);
+    document.getElementById('resp-status').textContent = 'Erreur';
+    setDot('err');
+    setStatus('Échec requête');
+  }
+  document.getElementById('sb-last').textContent = new Date().toLocaleTimeString();
+}
+
+// Logs et utilitaires
+function addSystemLog(msg, isErr=false) { let cont=document.getElementById('logs-list'); if(cont.querySelector('.no-log')) cont.innerHTML=''; let div=document.createElement('div'); div.className='log-entry '+(isErr?'err':'ok'); div.innerHTML=`<div class="log-time">${new Date().toLocaleTimeString()} · système</div><div class="log-url">${msg}</div>`; cont.prepend(div); while(cont.children.length>100) cont.removeChild(cont.lastChild); }
+function logEntry(url, ok, status, ms) { let cont=document.getElementById('logs-list'); if(cont.querySelector('.no-log')) cont.innerHTML=''; let cls=(status==='M2M'||status==='M2M via proxy')?'ok2':(ok?'ok':'err'); let div=document.createElement('div'); div.className='log-entry '+cls; div.innerHTML=`<div class="log-time">${new Date().toLocaleTimeString()} · ${status} · ${ms}ms</div><div class="log-url" title="${url}">${url}</div>`; cont.prepend(div); while(cont.children.length>100) cont.removeChild(cont.lastChild); }
+function clearLogs() { document.getElementById('logs-list').innerHTML='<div class="no-log">Aucune requête envoyée</div>'; }
+function setResponse(t) { document.getElementById('response-area').value=t; }
+function clearResponse() { setResponse(''); document.getElementById('resp-status').textContent='-'; }
+function copyResponse() { navigator.clipboard.writeText(document.getElementById('response-area').value); }
+function copyUrl(gid,i) { let res=buildCmd(gid,i); navigator.clipboard.writeText(res.raw); setStatus('Commande copiée'); }
+function setStatus(m) { document.getElementById('status-msg').textContent=m; }
+function setDot(s) { document.getElementById('main-dot').className = 'status-dot '+(s||''); }
+function selectGroup(id) { activeGroup=id; renderGroups(); let g=groups.find(x=>x.id===id); document.getElementById('builder-title').textContent=g.label; document.getElementById('cmd-count').textContent=g.cmds.length+' commande'+(g.cmds.length>1?'s':''); renderCmds(g); }
+function renderGroups() { document.getElementById('groups-list').innerHTML = groups.map(g=>`<div class="group-item ${g.id===activeGroup?'active':''}" onclick="selectGroup('${g.id}')"><div class="group-dot" style="background:${g.color}"></div><div><div class="group-label">${g.label}</div><div class="group-desc">${g.desc}</div></div></div>`).join(''); }
+function toggleCard(gid,i) { document.getElementById(`card-${gid}-${i}`).classList.toggle('expanded'); rebuildUrl(gid,i); }
+function expandAll() { document.querySelectorAll('.cmd-card').forEach(c=>c.classList.add('expanded')); }
+function collapseAll() { document.querySelectorAll('.cmd-card').forEach(c=>c.classList.remove('expanded')); }
+function updateUrl() { let g=groups.find(x=>x.id===activeGroup); if(g) g.cmds.forEach((_,i)=>rebuildUrl(activeGroup,i)); }
+
+// Redimensionnements horizontaux et verticaux (inchangés)
+// ==================== REDIMENSIONNEMENT ====================
+// Règles en % de bodyRow.offsetWidth :
+//   Démarrage : chaque cadre = 25%
+//   Barre Left  (Catégories | Commandes) : [10%, 70%]
+//   Barre Right (Commandes  | Réponse)   : [20%, 90%]
+//   10% minimum garanti entre les deux barres adjacentes
+function initResizers() {
+  var bodyRow   = document.getElementById('body-row');
+  var colLeft   = document.getElementById('col-left');
+  var colCenter = document.getElementById('col-center');
+  var colRight  = document.getElementById('col-right');
+  var divLeft   = document.getElementById('div-left');
+  var divRight  = document.getElementById('div-right');
+
+  function W() { return bodyRow.offsetWidth; }
+  function px(pct) { return Math.round(W() * pct / 100); }
+  function setW(el, w) { el.style.flex = '0 0 ' + w + 'px'; el.style.minWidth = w + 'px'; }
+
+  // b1 = barre Left  [10%, 70%]
+  // b2 = barre Right [20%, 90%]
+  // Contrainte : b2 >= b1 + 10%
+  function applyBars(b1, b2) {
+    b1 = Math.max(px(10), Math.min(px(70), b1));
+    b2 = Math.max(px(20), Math.min(px(90), b2));
+    b1 = Math.min(b1, b2 - px(10));
+    b2 = Math.max(b2, b1 + px(10));
+    setW(colLeft,   Math.max(1, b1));
+    setW(colCenter, Math.max(1, b2 - b1 - 10));
+    setW(colRight,  Math.max(1, W() - b2 - 10));
+    return [b1, b2];
+  }
+
+  function saveBars(bars) { localStorage.setItem('ipx3_bars', JSON.stringify(bars)); }
+  function loadBars() {
+    try { var s = JSON.parse(localStorage.getItem('ipx3_bars')); if (s && s.length === 2) return s; } catch(e) {}
+    return null;
+  }
+  function setDefault() { saveBars(applyBars(px(25), px(75))); }
+  function getBars() { var s = loadBars(); return s || [px(25), px(75)]; }
+
+  // Efface les anciennes clés incompatibles
+  localStorage.removeItem('ipx3_cols');
+
+  var saved = loadBars();
+  if (saved) { applyBars(saved[0], saved[1]); }
+  else { setTimeout(setDefault, 0); }
+
+  function makeDragger(div, minPct, maxPct, getNewBars) {
+    div.addEventListener('mousedown', function(e) {
+      div.classList.add('dragging');
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+      function onMove(ev) {
+        var pos = Math.max(px(minPct), Math.min(px(maxPct), ev.clientX));
+        saveBars(applyBars.apply(null, getNewBars(pos)));
+      }
+      function onUp() {
+        div.classList.remove('dragging');
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+      }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+      e.preventDefault();
+    });
+  }
+
+  makeDragger(divLeft,  10, 70, function(pos) { var b = getBars(); return [Math.min(pos, b[1] - px(10)), b[1]]; });
+  makeDragger(divRight, 20, 90, function(pos) { var b = getBars(); return [b[0], Math.max(pos, b[0] + px(10))]; });
+
+  window.addEventListener('resize', setDefault);
+}
+
+function updateVerticalLayout() {
+  var colRight  = document.getElementById('col-right');
+  var respPanel = document.getElementById('response-panel');
+  var logsPanel = document.getElementById('logs-panel');
+  var div       = document.getElementById('vert-divider-resp-log');
+  if (!colRight) return;
+  var total = colRight.clientHeight, divH = div.offsetHeight, avail = total - divH;
+  if (avail <= 0) return;
+  var MIN_R = 80, MIN_L = 60;
+  var respH = avail * vertRatio, logsH = avail - respH;
+  if (respH < MIN_R && logsH > MIN_L) { var s = MIN_R - respH; respH = MIN_R; logsH -= s; if (logsH < MIN_L) logsH = MIN_L; vertRatio = respH / avail; }
+  else if (logsH < MIN_L && respH > MIN_R) { var s = MIN_L - logsH; logsH = MIN_L; respH -= s; if (respH < MIN_R) respH = MIN_R; vertRatio = respH / avail; }
+  respPanel.style.flex = '0 0 ' + respH + 'px';
+  logsPanel.style.flex = '0 0 ' + logsH + 'px';
+  localStorage.setItem('ipx3_vert_ratio', vertRatio);
+}
+
+function initVerticalResizing() {
+  var saved = localStorage.getItem('ipx3_vert_ratio');
+  if (saved && !isNaN(parseFloat(saved))) vertRatio = Math.min(0.85, Math.max(0.15, parseFloat(saved)));
+  updateVerticalLayout();
+  window.addEventListener('resize', function() { updateVerticalLayout(); });
+  var divider   = document.getElementById('vert-divider-resp-log');
+  var respPanel = document.getElementById('response-panel');
+  var colRight  = document.getElementById('col-right');
+  divider.addEventListener('mousedown', function(e) {
+    divider.classList.add('dragging');
+    document.body.style.cursor = 'row-resize';
+    document.body.style.userSelect = 'none';
+    var startY = e.clientY, startH = respPanel.offsetHeight;
+    function onMove(ev) {
+      var avail = colRight.clientHeight - divider.offsetHeight;
+      var newH  = Math.min(avail - 60, Math.max(80, startH + ev.clientY - startY));
+      if (avail > 0) { vertRatio = Math.min(0.85, Math.max(0.15, newH / avail)); updateVerticalLayout(); }
+    }
+    function onUp() {
+      divider.classList.remove('dragging');
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    }
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    e.preventDefault();
+  });
+}
+
+// Gestion modale tutoriel
+function showTutorial() { document.getElementById('tutorialModal').style.display = 'flex'; }
+function hideTutorial() { document.getElementById('tutorialModal').style.display = 'none'; }
+
+// Initialisation
+window.onload = () => {
+  loadConfig();
+  initResizers();
+  initVerticalResizing();
+  renderGroups();
+  selectGroup('sorties');
+  setStatus('Prêt – utilisez "Tester" pour HTTP, "Tester proxy M2M" pour valider le proxy');
+  addSystemLog('Interface chargée – proxy M2M configurable (IP + Port)');
+  document.getElementById('api-type-select').addEventListener('change', ()=>{ saveConfig(); updateSbTarget(); updateUrl(); });
+  document.getElementById('ip-input').addEventListener('input', ()=>{ saveConfig(); updateSbTarget(); updateUrl(); });
+  document.getElementById('proxyIp').addEventListener('input', saveConfig);
+  document.getElementById('proxyPort').addEventListener('input', saveConfig);
+  document.getElementById('useProxy').addEventListener('change', saveConfig);
+  document.getElementById('testConnectionBtn').onclick = testConnection;
+  document.getElementById('testProxyBtn').onclick = testProxy;
+  document.getElementById('btn-http').onclick = ()=>setApiMode('http');
+  document.getElementById('btn-m2m').onclick = ()=>setApiMode('m2m');
+  const showBtn = document.getElementById('showTutorialBtn');
+  if(showBtn) showBtn.onclick = showTutorial;
+  const closeBtns = document.querySelectorAll('.close-modal, #closeModalBtn');
+  closeBtns.forEach(btn => btn.onclick = hideTutorial);
+  window.onclick = (e) => { if(e.target === document.getElementById('tutorialModal')) hideTutorial(); };
+};
+</script>
+</body>
+</html>

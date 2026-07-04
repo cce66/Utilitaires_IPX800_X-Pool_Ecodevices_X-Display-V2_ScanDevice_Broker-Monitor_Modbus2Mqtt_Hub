@@ -1,0 +1,977 @@
+<!--=======================================================================-->
+<!--  X-POOL - MQTT-DECK v1 - GCE Electronics           maj 02/07/2026     -->
+<!--=======================================================================-->
+
+<!DOCTYPE html>
+<html lang="fr" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <title>X-POOL - MQTT Deck v1</title>
+  <!-- Polices -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin> 
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+
+  <style>
+    /* ---------- 1. VARIABLES GLOBALES (palette unifiée) ---------- */
+    :root {
+      --bg:       #0f1117;      /* fond principal */
+      --panel:    #181c27;      /* fond des panneaux */
+      --border:   #2a2f3e;      /* bordures */
+      --accent:   #6CC04A;      /* vert – succès, commandes PUB */
+      --accent2:  #0090ff;      /* bleu – données SUB */
+      --accent3:  #ff6b35;      /* orange – erreurs, alertes */
+      --pool:     #06b6d4;      /* cyan – couleur spécifique X-POOL */
+      --text:     #d4d8e8;      /* texte principal */
+      --text-dim: #7a809a;      /* texte secondaire */
+      --highlight: #ffd966;     /* jaune – surbrillance temporaire */
+      --header-h: 58px;
+      --gap:      14px;
+    }
+
+    /* ---------- 2. RÉINITIALISATION ET STYLES DE BASE ---------- */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 14px;
+      overflow: hidden;
+    }
+
+    /* ---------- 3. EN-TÊTE FIXE (header) ---------- */
+    header {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 200;
+      height: var(--header-h);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 0 24px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      box-shadow: 0 2px 20px rgba(0,0,0,.6);
+      flex-wrap: wrap;
+    }
+    .logo { display: flex; align-items: center; gap: 10px; }
+    .logo-box {
+      width: 110px;
+      height: 32px;
+      background: linear-gradient(135deg, #388bfd 0%, #3fb950 55%);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'IBM Plex Mono', monospace;
+      font-weight: 600;
+      font-size: 11px;
+      color: #000;
+      flex-shrink: 0;
+    }
+    header h1 {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 1rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      color: #fff;
+    }
+    .header-sep { flex: 1; }
+
+    /* Indicateur de connexion (rond) */
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--text-dim);
+      transition: background 0.3s;
+    }
+    .status-dot.connected { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+    .status-dot.error    { background: var(--accent3); box-shadow: 0 0 8px var(--accent3); }
+
+    /* ---------- 4. CHAMPS DE CONFIGURATION (barre d'en-tête) ---------- */
+    .cfg-field {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .cfg-field label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      white-space: nowrap;
+    }
+    .cfg-field input, .cfg-field select {
+      height: 30px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--accent);
+      padding: 0 10px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .cfg-field input:focus, .cfg-field select:focus { border-color: var(--pool); }
+
+    /* ---------- 5. BOUTONS GÉNÉRIQUES ---------- */
+    .btn {
+      height: 30px;
+      padding: 0 14px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      transition: opacity 0.2s, transform 0.1s;
+      white-space: nowrap;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary   { background: var(--accent); color: #000; }
+    .btn-secondary { background: var(--border); color: var(--text); }
+    .btn-secondary:hover { background: #343a4e; }
+    .btn-sm { height: 22px; padding: 0 9px; font-size: 10px; }
+
+    /* Boutons rapides de publication (ON/OFF) – ajouté */
+    .btn-pub {
+      padding: 2px 6px;
+      font-size: 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      border: none;
+      font-weight: bold;
+      background: rgba(0,200,150,.2);
+      color: var(--accent);
+      transition: 0.1s;
+    }
+    .btn-pub:hover { opacity: 0.8; }
+
+    /* ---------- 6. ZONE PRINCIPALE (wrapper) ---------- */
+    #wrapper {
+      position: fixed;
+      top: var(--header-h);
+      left: 0; right: 0; bottom: 0;
+      display: flex;
+      flex-direction: column;
+      gap: var(--gap);
+      padding: var(--gap);
+    }
+    #config-bar {
+      flex-shrink: 0;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 16px;
+    }
+
+    /* ---------- 7. GRILLE ET CARTES (tableau de bord) ---------- */
+    .dashboard-split {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      overflow: hidden;
+    }
+    .left-panel {
+      display: flex;
+      flex-direction: column;
+      min-width: 200px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .left-panel .card-header {
+      background: #1e2333;
+      padding: 8px 14px;
+      font-size: 14px;
+      font-weight: bold;
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--border);
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+    }
+    .group-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+      align-items: start;
+    }
+
+    /* Cartes internes (sous-groupes de topics) */
+    .sub-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .sub-card-header {
+      background: #11141c;
+      padding: 5px 8px;
+      font-size: 13px;
+      font-weight: bold;
+      color: var(--accent);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .type-badge {
+      font-size: 9px;
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-weight: 600;
+    }
+    .badge-pub  { background: rgba(108,192,74,.15); color: var(--accent); }
+    .badge-sub  { background: rgba(0,144,255,.15); color: var(--accent2); }
+    .badge-both { background: rgba(210,153,34,.15); color: #d29922; } /* ajouté */
+    .sub-card-body { padding: 4px; }
+
+    /* Lignes de topics */
+    .topic-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 6px;
+      border-bottom: 1px solid var(--border);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 13px;
+    }
+    .topic-label {
+      color: var(--text-dim);
+      flex: 2;
+      font-size: 11px;
+    }
+    .topic-value {
+      font-weight: bold;
+      color: var(--text);
+      text-align: right;
+      flex: 1;
+      font-size: 13px;
+    }
+    .topic-unit {
+      margin-left: 4px;
+      color: var(--text-dim);
+      font-size: 9px;
+      min-width: 26px;
+      text-align: left;
+    }
+    .topic-row.highlight { background-color: var(--highlight); color: #000; }
+    .pub-actions {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      margin-left: 6px;
+      flex-shrink: 0;
+    }
+    .state-indicator {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--text-dim);
+      margin-left: 6px;
+      flex-shrink: 0;
+    }
+    .state-on  { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+    .state-off { background: var(--accent3); }
+
+    /* Alertes */
+    .topic-row.alert-active {
+      background: rgba(255,107,53,.12);
+      border-left: 3px solid var(--accent3);
+    }
+    .topic-row.alert-active .topic-label,
+    .topic-row.alert-active .topic-value {
+      color: var(--accent3);
+    }
+
+    /* ---------- 8. PANNEAU DROIT (Trafic + Historique) ---------- */
+    .right-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 250px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .panel-header {
+      background: #1e2333;
+      padding: 8px 14px;
+      font-size: 14px;
+      font-weight: bold;
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--border);
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+    }
+    .traffic-container, .history-container {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .traffic-body, .history-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+    }
+    .traffic-item, .log-item {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      border-bottom: 1px solid var(--border);
+      padding: 6px 0;
+      word-break: break-word;
+    }
+    .traffic-time, .log-time {
+      color: var(--text-dim);
+      margin-right: 8px;
+    }
+    .traffic-topic { color: var(--accent2); font-weight: bold; }
+    .traffic-payload { color: var(--text-dim); word-break: break-all; } /* ajouté */
+    .filter-row {
+      display: flex;
+      gap: 8px;
+      padding: 6px 10px;
+      border-top: 1px solid var(--border);
+      align-items: center;
+      background: var(--bg);
+    }
+    .filter-row input {
+      flex: 1;
+      height: 26px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text);
+      padding: 0 8px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+    }
+
+    /* ---------- 9. DIVISEURS REDIMENSIONNABLES ---------- */
+    .divider-vertical {
+      flex-shrink: 0;
+      width: 10px;
+      cursor: col-resize;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+    .divider-vertical::after {
+      content: '';
+      width: 2px;
+      height: 44px;
+      border-radius: 2px;
+      background: var(--border);
+      transition: background 0.2s, height 0.2s;
+    }
+    .divider-vertical:hover::after,
+    .divider-vertical.dragging::after {
+      background: var(--accent2);
+      height: 64px;
+    }
+    .divider-horizontal {
+      flex-shrink: 0;
+      height: 10px;
+      cursor: row-resize;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      background: transparent;
+    }
+    .divider-horizontal::after {
+      content: '';
+      width: 44px;
+      height: 2px;
+      border-radius: 2px;
+      background: var(--border);
+      transition: background 0.2s, width 0.2s;
+    }
+    .divider-horizontal:hover::after,
+    .divider-horizontal.dragging::after {
+      background: var(--accent2);
+      width: 64px;
+    }
+
+    /* ---------- 10. MODALES (aide WebSocket + référence topics) ---------- */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-content {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      max-width: 800px;
+      width: 90%;
+      max-height: 80%;
+      overflow-y: auto;
+      padding: 20px;
+      color: var(--text);
+      font-size: 13px;
+      font-family: 'IBM Plex Sans', sans-serif;
+    }
+    .modal-content h3 { color: var(--accent2); margin-bottom: 10px; }
+    .modal-content h4 { color: var(--accent); margin: 14px 0 6px; font-size: 13px; }
+    .modal-content pre {
+      background: var(--bg);
+      padding: 10px;
+      border-radius: 6px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+    }
+    .modal-content p { margin-bottom: 8px; color: var(--text-dim); }
+    .modal-content table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 8px 0;
+      font-size: 11px;
+      table-layout: fixed;
+    }
+    .modal-content th {
+      background: #1e2333;
+      color: var(--accent2);
+      padding: 6px 8px;
+      text-align: left;
+      border: 1px solid var(--border);
+      font-weight: 600;
+    }
+    .modal-content td {
+      padding: 6px 8px;
+      border: 1px solid var(--border);
+      color: var(--text);
+      vertical-align: top;
+    }
+    .modal-content td:first-child {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      color: var(--accent2);
+    }
+    .modal-content .section-note {
+      background: rgba(0,144,255,.08);
+      border-left: 3px solid var(--accent2);
+      padding: 6px 10px;
+      border-radius: 0 4px 4px 0;
+      margin: 8px 0;
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+    .tag-pub, .tag-sub {
+      display: inline-block;
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-weight: bold;
+    }
+    .tag-pub {
+      background: rgba(108,192,74,.15);
+      color: var(--accent);
+    }
+    .tag-sub {
+      background: rgba(0,144,255,.15);
+      color: var(--accent2);
+    }
+    .close-modal {
+      float: right;
+      cursor: pointer;
+      font-size: 20px;
+      color: var(--text-dim);
+    }
+    .close-modal:hover { color: var(--text); }
+
+    /* Styles spécifiques à la modale des topics */
+    #topicsModal .modal-content th:nth-child(1),
+    #topicsModal .modal-content td:nth-child(1) {
+      width: 30%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    #topicsModal .modal-content th:nth-child(2),
+    #topicsModal .modal-content td:nth-child(2) {
+      width: 10%;
+      text-align: center;
+      white-space: nowrap;
+    }
+    #topicsModal .modal-content th:nth-child(3),
+    #topicsModal .modal-content td:nth-child(3) { width: 30%; }
+    #topicsModal .modal-content th:nth-child(4),
+    #topicsModal .modal-content td:nth-child(4) {
+      width: 30%;
+      white-space: nowrap;
+    }
+  </style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+</head>
+
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-box">GCE Electronics</div>
+    <h1>X-POOL - MQTT Deck v1</h1>
+  </div>
+  <div class="header-sep"></div>
+  <div class="cfg-field"><label>IP Broker Mqtt</label><input id="brokerUrl" type="text" placeholder="ws://192.168.1.100:9001" style="width:180px;"></div>
+  <div class="cfg-field"><label>Client ID</label><input id="clientId" type="text" placeholder="auto" style="width:120px;"></div>
+  <div class="cfg-field"><label>User</label><input id="username" type="text" placeholder="optionnel" style="width:90px;"></div>
+  <div class="cfg-field"><label>Pass</label><input id="password" type="password" placeholder="optionnel" style="width:90px;"></div>
+  <div class="cfg-field"><label>ID X-POOL</label><input id="deviceId" type="text" value="000001" style="width:80px;"></div>
+  <div class="cfg-field"><label>Subscribe</label><input id="subTopic" type="text" value="x-pool_000001/#" style="width:150px;"></div>
+  <button id="toggleConnectBtn" class="btn btn-primary">Connecter</button>
+  <div class="status-dot" id="statusDot"></div>
+</header>
+
+<div id="wrapper">
+  <div id="dashboardSplit" class="dashboard-split"></div>
+  <div id="config-bar">
+    <div style="flex:1"></div>
+    <button id="websocketHelpBtn" class="btn btn-secondary btn-sm">Configuration WebSockets de Mosquitto</button>
+  </div>
+</div>
+
+<!-- ========== MODALE : AIDE POUR WEBSOCKETS MOSQUITTO ========== -->
+<div id="tutorialModal" class="modal">
+  <div class="modal-content">
+    <span class="close-modal">&times;</span>
+    <h3>🔧 Comment activer WebSockets sur votre container Mosquitto</h3>
+    <p>Pour que ce tableau de bord puisse se connecter à votre broker, vous devez exposer le port WebSocket.</p>
+    <h4>1. Créez un dossier de configuration :</h4>
+    <pre>mkdir -p ~/mosquitto/config</pre>
+    <h4>2. Créez le fichier mosquitto.conf :</h4>
+    <pre>nano ~/mosquitto/config/mosquitto.conf</pre>
+    <h4>3. Collez ce contenu :</h4>
+    <pre># Configuration pour Mosquitto sur Raspberry Pi
+# Écoute le port MQTT standard (TCP)
+listener 1883
+protocol mqtt
+
+# Écoute le port WebSocket (pour les clients navigateur)
+listener 9001
+protocol websockets
+
+# Autorise les connexions anonymes (pour les tests, à sécuriser ensuite)
+allow_anonymous true
+
+# Active la persistance des messages (optionnel)
+persistence true
+persistence_location /mosquitto/data/</pre>
+    <p>⚠️ Attention : si vous avez sécurisé votre broker, remplacez <code>allow_anonymous true</code> par une authentification.</p> 
+    <h4>4. Recréez le conteneur avec les ports et volumes :</h4>
+    <p>Arretez le container</p>
+    <pre>sudo docker stop mosquitto</pre>
+    <p>Supprimez le container</p>
+    <pre>sudo docker rm mosquitto</pre>
+    <p>Recréez le container</p>
+    <pre>sudo docker run -d \
+    --name mosquitto \
+    --restart unless-stopped \
+    -p 1883:1883 \
+    -p 9001:9001 \
+    -v ~/mosquitto/config:/mosquitto/config:ro \
+    -v ~/mosquitto/data:/mosquitto/data \
+    eclipse-mosquitto</pre>
+    <h4>5. Vérifiez que le port 9001 est actif :</h4>
+    <pre>docker logs mosquitto</pre>
+    <p>   (vous devez voir "Opening websocket listen socket on port 9001")</p>
+    <h4>6. Dans le champ "URL WEBSOCKET", entrez l'URL :</h4>
+    <pre>ws://VOTRE_IP:9001</pre>
+  </div>
+</div>
+
+<!-- MODALE RÉFÉRENCE DES TOPICS X-POOL -->
+<div id="topicsModal" class="modal">
+  <div class="modal-content">
+    <span class="close-modal close-topics">&times;</span>
+    <h3>🏊 Référence des topics X-POOL (API V1.0)</h3>
+    <p><span class="tag-pub">PUB</span> = commande que vous envoyez vers le X-POOL &nbsp; <span class="tag-sub">SUB</span> = valeur reçue du X-POOL<br>La racine <code style="color:var(--pool)">x-pool_&lt;ID&gt;</code> correspond à l'identifiant saisi dans le champ <strong>ID X-POOL</strong>.</p>
+    <h4>🔌 Commandes sorties (PUB)</h4>
+    <div class="section-note">Actions envoyées à l'extension X-POOL pour piloter les sorties.</div>
+    <table>
+      <thead><tr><th>Topic</th><th>Type</th><th>Description</th><th>Valeurs / Unité</th></tr></thead>
+      <tbody>
+        <tr><td>x-pool_&lt;ID&gt;/outCmd/filtration</td><td><span class="tag-pub">PUB</span></td><td>Commander la filtration</td><td>1 = ON, 0 = OFF</td></tr>
+        <tr><td>x-pool_&lt;ID&gt;/outCmd/heater</td><td><span class="tag-pub">PUB</span></td><td>Commander le chauffage</td><td>1 = ON, 0 = OFF</td></tr>
+        <tr><td>x-pool_&lt;ID&gt;/outCmd/light</td><td><span class="tag-pub">PUB</span></td><td>Commander la lumière</td><td>1 = ON, 0 = OFF</td></tr>
+        <tr><td>x-pool_&lt;ID&gt;/outCmd/aux</td><td><span class="tag-pub">PUB</span></td><td>Commander l'auxiliaire</td><td>1 = ON, 0 = OFF</td></tr>
+      </tbody>
+    </table>
+    <h4>💡 États sorties (SUB)</h4>
+    <div class="section-note">Retour d'état des relais du X-POOL.</div>
+    <table>
+      <thead><tr><th>Topic</th><th>Type</th><th>Description</th><th>Valeurs</th></tr></thead>
+      <tbody>
+        <tr><td>x-pool_&lt;ID&gt;/outState/filtration</td><td><span class="tag-sub">SUB</span></td><td>État relais filtration</td><td>0 = OFF, 1 = ON</td></tr>
+        <tr><td>x-pool_&lt;ID&gt;/outState/heater</td><td><span class="tag-sub">SUB</span></td><td>État relais chauffage</td><td>0 = OFF, 1 = ON</td></tr>
+        <tr><td>x-pool_&lt;ID&gt;/outState/light</td><td><span class="tag-sub">SUB</span></td><td>État relais lumière</td><td>0 = OFF, 1 = ON</td></tr>
+        <tr><td>x-pool_&lt;ID&gt;/outState/aux</td><td><span class="tag-sub">SUB</span></td><td>État relais auxiliaire</td><td>0 = OFF, 1 = ON</td></tr>
+      </tbody>
+    </table>
+    <h4>🌡️ Mesures analogiques (SUB)</h4>
+    <table>
+      <thead><tr><th>Topic</th><th>Type</th><th>Description</th><th>Unité</th></tr></thead>
+      <tbody>
+        <tr><td>x-pool_&lt;ID&gt;/ana/eau</td><td><span class="tag-sub">SUB</span></td><td>Température de l'eau</td><td>°C</td></tr>
+        <tr><td>x-pool_&lt;ID&gt;/ana/air</td><td><span class="tag-sub">SUB</span></td><td>Température de l'air</td><td>°C</td></tr>
+        <tr><td>x-pool_&lt;ID&gt;/ana/ph</td><td><span class="tag-sub">SUB</span></td><td>Taux de pH</td><td>—</td></tr>
+        <tr><td>x-pool_&lt;ID&gt;/ana/redox</td><td><span class="tag-sub">SUB</span></td><td>Potentiel ORP / Redox</td><td>mV</td></tr>
+      </tbody>
+    </table>
+    <h4>🚨 Notifications / Alertes (SUB)</h4>
+    <table>
+      <thead><tr><th>Topic</th><th>Type</th><th>Description</th><th>Valeurs</th></tr></thead>
+      <tbody>
+        <tr><td>x-pool_&lt;ID&gt;/notif/unph</td><td><span class="tag-sub">SUB</span></td><td>Alerte pH trop bas</td><td>0 = OK, 1 = ALERTE</td></tr>
+        <tr><td>x-pool_&lt;ID&gt;/notif/upph</td><td><span class="tag-sub">SUB</span></td><td>Alerte pH trop haut</td><td>0 = OK, 1 = ALERTE</td></tr>
+        <tr><td>x-pool_&lt;ID&gt;/notif/unorp</td><td><span class="tag-sub">SUB</span></td><td>Alerte ORP trop bas</td><td>0 = OK, 1 = ALERTE</td></tr>
+        <tr><td>x-pool_&lt;ID&gt;/notif/uporp</td><td><span class="tag-sub">SUB</span></td><td>Alerte ORP trop haut</td><td>0 = OK, 1 = ALERTE</td></tr>
+      </tbody>
+    </table>
+    <h4>📥 Entrées capteurs (SUB)</h4>
+    <table>
+      <thead><tr><th>Topic</th><th>Type</th><th>Description</th><th>Valeurs</th></tr></thead>
+      <tbody>
+        <tr><td>x-pool_&lt;ID&gt;/in/filtration</td><td><span class="tag-sub">SUB</span></td><td>Entrée capteur filtration</td><td>0/1</td></tr>
+        <tr><td>x-pool_&lt;ID&gt;/in/heater</td><td><span class="tag-sub">SUB</span></td><td>Entrée capteur chauffage</td><td>0/1</td></tr>
+        <tr><td>x-pool_&lt;ID&gt;/in/light</td><td><span class="tag-sub">SUB</span></td><td>Entrée capteur lumière</td><td>0/1</td></tr>
+        <tr><td>x-pool_&lt;ID&gt;/in/aux</td><td><span class="tag-sub">SUB</span></td><td>Entrée capteur auxiliaire</td><td>0/1</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  function getDeviceId() {
+    return document.getElementById('deviceId').value.trim() || '000001';
+  }
+
+  function updateSubscribeFromDeviceId() {
+    const subInput = document.getElementById('subTopic');
+    const currentSub = subInput.value.trim();
+    const id = getDeviceId();
+    const expected = `x-pool_${id}/#`;
+    if (!currentSub || currentSub.match(/^x-pool_\d+\/#$/)) {
+      subInput.value = expected;
+    }
+  }
+
+  function buildSubCategories() {
+    const id = getDeviceId();
+    const b  = `x-pool_${id}`;
+    return [
+      { title: '🔌 COMMANDES SORTIES', badge: 'pub', items: [
+        { label: 'Filtration', topic: `${b}/outCmd/filtration`, unit: '', dir: 'pub', sendable: false, // sendable retiré (pas de champ "Publier")
+          quickBtns: [{label:'ON', val:'1'}, {label:'OFF', val:'0'}] },
+        { label: 'Chauffage',  topic: `${b}/outCmd/heater`,     unit: '', dir: 'pub', sendable: false,
+          quickBtns: [{label:'ON', val:'1'}, {label:'OFF', val:'0'}] },
+        { label: 'Lumière',    topic: `${b}/outCmd/light`,      unit: '', dir: 'pub', sendable: false,
+          quickBtns: [{label:'ON', val:'1'}, {label:'OFF', val:'0'}] },
+        { label: 'Auxiliaire', topic: `${b}/outCmd/aux`,        unit: '', dir: 'pub', sendable: false,
+          quickBtns: [{label:'ON', val:'1'}, {label:'OFF', val:'0'}] },
+      ]},
+      { title: '💡 ÉTATS SORTIES', badge: 'sub', items: [
+        { label: 'Filtration', topic: `${b}/outState/filtration`, unit: '', dir: 'sub', isState: true },
+        { label: 'Chauffage',  topic: `${b}/outState/heater`,     unit: '', dir: 'sub', isState: true },
+        { label: 'Lumière',    topic: `${b}/outState/light`,      unit: '', dir: 'sub', isState: true },
+        { label: 'Auxiliaire', topic: `${b}/outState/aux`,        unit: '', dir: 'sub', isState: true },
+      ]},
+      { title: '🌡️ MESURES ANALOGIQUES', badge: 'sub', items: [
+        { label: 'Temp. eau',   topic: `${b}/ana/eau`,   unit: '°C', dir: 'sub' },
+        { label: 'Temp. air',   topic: `${b}/ana/air`,   unit: '°C', dir: 'sub' },
+        { label: 'pH',          topic: `${b}/ana/ph`,    unit: '',   dir: 'sub' },
+        { label: 'ORP / Redox', topic: `${b}/ana/redox`, unit: 'mV', dir: 'sub' },
+      ]},
+      { title: '🚨 NOTIFICATIONS', badge: 'sub', items: [
+        { label: 'pH trop bas',  topic: `${b}/notif/unph`,  unit: '', dir: 'sub', isNotif: true },
+        { label: 'pH trop haut', topic: `${b}/notif/upph`,  unit: '', dir: 'sub', isNotif: true },
+        { label: 'ORP trop bas', topic: `${b}/notif/unorp`, unit: '', dir: 'sub', isNotif: true },
+        { label: 'ORP trop haut',topic: `${b}/notif/uporp`, unit: '', dir: 'sub', isNotif: true },
+      ]},
+      { title: '📥 ENTRÉES CAPTEURS', badge: 'sub', items: [
+        { label: 'Filtration', topic: `${b}/in/filtration`, unit: '', dir: 'sub', isState: true },
+        { label: 'Chauffage',  topic: `${b}/in/heater`,     unit: '', dir: 'sub', isState: true },
+        { label: 'Lumière',    topic: `${b}/in/light`,      unit: '', dir: 'sub', isState: true },
+        { label: 'Auxiliaire', topic: `${b}/in/aux`,        unit: '', dir: 'sub', isState: true },
+      ]},
+    ];
+  }
+
+  let topicRows = new Map();
+  let client = null;
+  let trafficListening = true;
+  let trafficFilter = '';
+  let trafficMessages = [];
+  let trafficBody, historyBody;
+
+  function buildDashboard() {
+    topicRows.clear();
+    const container = document.getElementById('dashboardSplit');
+    container.innerHTML = '';
+    const subCategories = buildSubCategories();
+    const id = getDeviceId();
+
+    const leftPanel = document.createElement('div');
+    leftPanel.className = 'left-panel';
+    leftPanel.innerHTML = `<div class="card-header">
+        <span>🏊 TOPICS X-POOL <small style="font-size:11px;color:var(--text-dim);margin-left:8px;">ID : ${id}</small></span>
+        <div style="margin-left: auto; display: flex; gap: 8px;">
+          <button id="clearValuesBtn" class="btn btn-secondary btn-sm">Réinitialiser</button>
+          <button id="topicsRefBtn" class="btn btn-secondary btn-sm">📋 Référence des topics</button>
+        </div>
+      </div>`;
+    const groupBody = document.createElement('div');
+    groupBody.className = 'group-body';
+    leftPanel.appendChild(groupBody);
+
+    for (const subCat of subCategories) {
+      const subCard = document.createElement('div');
+      subCard.className = 'sub-card';
+      const badgeClass = subCat.badge === 'both' ? 'badge-both' : `badge-${subCat.badge}`;
+      const badgeLabel = subCat.badge === 'both' ? 'PUB/SUB' : subCat.badge.toUpperCase();
+      subCard.innerHTML = `<div class="sub-card-header">${subCat.title} <span class="type-badge ${badgeClass}">${badgeLabel}</span></div>`;
+      const subBody = document.createElement('div');
+      subBody.className = 'sub-card-body';
+      subCard.appendChild(subBody);
+      for (const item of subCat.items) {
+        const row = document.createElement('div');
+        row.className = 'topic-row';
+        row.setAttribute('data-topic', item.topic);
+        const labelSpan = document.createElement('span');
+        labelSpan.className = 'topic-label';
+        labelSpan.textContent = item.label;
+        row.appendChild(labelSpan);
+        const valueSpan = document.createElement('span');
+        valueSpan.className = 'topic-value';
+        valueSpan.textContent = '—';
+        row.appendChild(valueSpan);
+        if (item.unit) {
+          const unitSpan = document.createElement('span');
+          unitSpan.className = 'topic-unit';
+          unitSpan.textContent = item.unit;
+          row.appendChild(unitSpan);
+        }
+        if (item.isState) {
+          const led = document.createElement('span');
+          led.className = 'state-indicator';
+          led.id = `led-${item.topic.replace(/\//g, '-')}`;
+          row.appendChild(led);
+        }
+        // Boutons rapides ON/OFF pour les commandes
+        if (item.quickBtns) {
+          const btnDiv = document.createElement('div');
+          btnDiv.className = 'pub-actions';
+          for (const qb of item.quickBtns) {
+            const btn = document.createElement('button');
+            btn.className = 'btn-pub';
+            btn.textContent = qb.label;
+            btn.style.background  = qb.val === '1' ? 'rgba(0,200,150,.25)' : 'rgba(255,107,53,.2)';
+            btn.style.color       = qb.val === '1' ? 'var(--accent)'        : 'var(--accent3)';
+            btn.style.borderColor = qb.val === '1' ? 'rgba(0,200,150,.5)'   : 'rgba(255,107,53,.4)';
+            btn.addEventListener('click', (e) => { e.stopPropagation(); publishTopic(item.topic, qb.val); });
+            btnDiv.appendChild(btn);
+          }
+          row.appendChild(btnDiv);
+        }
+        subBody.appendChild(row);
+        topicRows.set(item.topic, { row, valueSpan, item: { ...item, value: null } });
+      }
+      groupBody.appendChild(subCard);
+    }
+
+    const verticalDivider = document.createElement('div');
+    verticalDivider.className = 'divider-vertical';
+    const rightPanel = document.createElement('div');
+    rightPanel.className = 'right-panel';
+    const trafficPanel = document.createElement('div');
+    trafficPanel.className = 'traffic-container';
+    trafficPanel.innerHTML = `<div class="panel-header">
+        <span>📡 Traffic MQTT</span>
+        <div style="margin-left: auto; display: flex; gap: 8px;">
+          <button id="copyTrafficBtn" class="btn btn-secondary btn-sm">Copier</button>
+          <button id="clearTrafficBtn" class="btn btn-secondary btn-sm">Effacer</button>
+          <button id="listenToggleBtn" class="btn btn-secondary btn-sm">Écouter</button>
+        </div>
+      </div>
+      <div class="traffic-body" id="trafficBody"></div>
+      <div class="filter-row">
+        <span>🔍 Filtre topic :</span>
+        <input type="text" id="trafficFilter" placeholder="ex: x-pool_000001/ana/">
+      </div>`;
+    trafficBody = trafficPanel.querySelector('#trafficBody');
+    const horizontalDivider = document.createElement('div');
+    horizontalDivider.className = 'divider-horizontal';
+    const historyPanel = document.createElement('div');
+    historyPanel.className = 'history-container';
+    historyPanel.innerHTML = `<div class="panel-header">
+        <span>📜 Historique</span>
+        <div style="margin-left: auto;"><button id="clearHistoryBtn" class="btn btn-secondary btn-sm">Effacer</button></div>
+      </div>
+      <div class="history-body" id="historyBody"></div>`;
+    historyBody = historyPanel.querySelector('#historyBody');
+    historyBody.innerHTML = '<div class="log-item" style="color: var(--text-dim);">Aucune activité</div>';
+    rightPanel.appendChild(trafficPanel);
+    rightPanel.appendChild(horizontalDivider);
+    rightPanel.appendChild(historyPanel);
+    container.appendChild(leftPanel);
+    container.appendChild(verticalDivider);
+    container.appendChild(rightPanel);
+
+    document.getElementById('topicsRefBtn').addEventListener('click', () => { document.getElementById('topicsModal').style.display = 'flex'; });
+    document.getElementById('clearValuesBtn').addEventListener('click', resetValues);
+    document.getElementById('copyTrafficBtn').addEventListener('click', copyTraffic);
+    document.getElementById('clearTrafficBtn').addEventListener('click', clearTraffic);
+    document.getElementById('listenToggleBtn').addEventListener('click', toggleListening);
+    document.getElementById('clearHistoryBtn').addEventListener('click', clearHistory);
+    document.getElementById('trafficFilter').addEventListener('input', (e) => { trafficFilter = e.target.value; applyTrafficFilter(); });
+    initResizers(leftPanel, verticalDivider, rightPanel, horizontalDivider, trafficPanel, historyPanel);
+  }
+
+  // (Fonctions de redimensionnement)
+  function initResizers(leftPanel, verticalDivider, rightPanel, horizontalDivider, trafficPanel, historyPanel) {
+    const container = document.getElementById('dashboardSplit');
+    const MIN_W = 200, MIN_H_TRAFFIC = 80, MIN_H_HISTORY = 60;
+    let leftWidth = localStorage.getItem('xpool_left_width');
+    let trafficHeight = localStorage.getItem('xpool_traffic_height');
+    if (leftWidth) leftPanel.style.flex = `0 0 ${leftWidth}px`;
+    else { leftPanel.style.flex = '0 0 40%'; rightPanel.style.flex = '1'; }
+    if (trafficHeight) trafficPanel.style.flex = `0 0 ${trafficHeight}px`;
+    else trafficPanel.style.flex = '0 0 60%';
+    historyPanel.style.flex = '0 0 auto';
+    let dragH = false, startX, startLeft, startRight;
+    verticalDivider.addEventListener('mousedown', (e) => {
+      dragH = true; startX = e.clientX; startLeft = leftPanel.offsetWidth; startRight = rightPanel.offsetWidth;
+      verticalDivider.classList.add('dragging'); document.body.style.cursor = 'col-resize'; document.body.style.userSelect = 'none'; e.preventDefault();
+    });
+    window.addEventListener('mousemove', (e) => {
+      if (!dragH) return;
+      const delta = e.clientX - startX;
+      let newLeft = Math.max(MIN_W, startLeft + delta);
+      let newRight = Math.max(MIN_W, startRight - delta);
+      if (newLeft + newRight > container.offsetWidth) return;
+      leftPanel.style.flex = `0 0 ${newLeft}px`; rightPanel.style.flex = `0 0 ${newRight}px`;
+      localStorage.setItem('xpool_left_width', newLeft);
+    });
+    window.addEventListener('mouseup', () => { if (dragH) { dragH = false; verticalDivider.classList.remove('dragging'); document.body.style.cursor = ''; document.body.style.userSelect = ''; } });
+    let dragV = false, startY, startTraffic, startHistory;
+    horizontalDivider.addEventListener('mousedown', (e) => {
+      dragV = true; startY = e.clientY; startTraffic = trafficPanel.offsetHeight; startHistory = historyPanel.offsetHeight;
+      horizontalDivider.classList.add('dragging'); document.body.style.cursor = 'row-resize'; document.body.style.userSelect = 'none'; e.preventDefault();
+    });
+    window.addEventListener('mousemove', (e) => {
+      if (!dragV) return;
+      const delta = e.clientY - startY;
+      let newTraffic = Math.max(MIN_H_TRAFFIC, startTraffic + delta);
+      let maxHistory = rightPanel.offsetHeight - newTraffic - horizontalDivider.offsetHeight;
+      if (maxHistory < MIN_H_HISTORY) newTraffic = rightPanel.offsetHeight - MIN_H_HISTORY - horizontalDivider.offsetHeight;
+      if (newTraffic < MIN_H_TRAFFIC) newTraffic = MIN_H_TRAFFIC;
+      trafficPanel.style.flex = `0 0 ${newTraffic}px`; historyPanel.style.flex = `0 0 auto`;
+      localStorage.setItem('xpool_traffic_height', newTraffic);
+    });
+    window.addEventListener('mouseup', () => { if (dragV) { dragV = false; horizontalDivider.classList.remove('dragging'); document.body.style.cursor = ''; document.body.style.userSelect = ''; } });
+  }
+
+  function addTrafficMessage(direction, topic, payload, isError = false) {
+    if (!trafficListening) return;
+    trafficMessages.push({ time: new Date().toLocaleTimeString(), direction, topic, payload, isError });
+    applyTrafficFilter();
+  }
+  function applyTrafficFilter() {
+    if (!trafficBody) return;
+    const filter = trafficFilter.toLowerCase();
+    const filtered = trafficMessages.filter(m => m.topic.toLowerCase().includes(filter));
+    trafficBody.innerHTML = filtered.map(m => `<div class="traffic-item" style="color: ${m.isError ? 'var(--accent3)' : 'var(--text)'}"><span class="traffic-time">${m.time}</span><span class="traffic-topic">[${m.direction}] ${m.topic}</span> → <span class="traffic-payload">${escapeHtml(m.payload)}</span></div>`).join('');
+    if (filtered.length === 0) trafficBody.innerHTML = '<div class="traffic-item" style="color:var(--text-dim);">Aucun message correspondant</div>';
+  }
+  function copyTraffic() { navigator.clipboard.writeText(trafficMessages.map(m => `${m.time} [${m.direction}] ${m.topic} → ${m.payload}`).join('\n')); addSystemLog('Traffic copié dans le presse-papier'); }
+  function clearTraffic() { trafficMessages = []; if(trafficBody) trafficBody.innerHTML = '<div class="traffic-item" style="color:var(--text-dim);">Aucun message</div>'; addSystemLog('Traffic effacé'); }
+  function clearHistory() { if(historyBody) historyBody.innerHTML = '<div class="log-item" style="color: var(--text-dim);">Aucune activité</div>'; addSystemLog('Historique effacé'); }
+  function toggleListening() { trafficListening = !trafficListening; const btn = document.getElementById('listenToggleBtn'); btn.textContent = trafficListening ? 'Écouter' : 'Arrêter'; if(!trafficListening) { btn.classList.add('btn-primary'); btn.classList.remove('btn-secondary'); } else { btn.classList.remove('btn-primary'); btn.classList.add('btn-secondary'); } }
+  function escapeHtml(str) { return str.replace(/[&<>]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;' }[m])); }
+  function publishTopic(topic, payload) { if(!client || !client.isConnected()) { addSystemLog('Non connecté au broker', true); return; } const msg = new Paho.MQTT.Message(String(payload)); msg.destinationName = topic; client.send(msg); addSystemLog(`📤 Publié sur <strong>${topic}</strong> : <em>${payload}</em>`); addTrafficMessage('PUB', topic, payload); }
+  function updateTopicValue(topic, rawValue) {
+    const entry = topicRows.get(topic); if(!entry) return false;
+    let newVal = rawValue, displayVal = rawValue;
+    if(!isNaN(parseFloat(rawValue)) && isFinite(rawValue)) { newVal = parseFloat(rawValue); displayVal = Number.isInteger(newVal) ? newVal.toString() : newVal.toFixed(3).replace(/\.?0+$/, ''); }
+    if(entry.item.value === newVal) return false;
+    entry.item.value = newVal;
+    if(entry.item.isState) { const numVal = parseInt(newVal); displayVal = numVal===1 ? 'ON' : numVal===0 ? 'OFF' : '—'; const led = document.getElementById(`led-${topic.replace(/\//g, '-')}`); if(led) led.className = 'state-indicator ' + (numVal===1 ? 'state-on' : numVal===0 ? 'state-off' : ''); }
+    if(entry.item.isNotif) { const numVal = parseInt(newVal); displayVal = numVal===1 ? '⚠️ ALERTE' : '—'; if(numVal===1) entry.row.classList.add('alert-active'); else entry.row.classList.remove('alert-active'); }
+    if(entry.valueSpan) { entry.valueSpan.textContent = displayVal; if(!entry.item.isNotif) { entry.row.classList.add('highlight'); setTimeout(() => { if(entry.row) entry.row.classList.remove('highlight'); }, 1000); } }
+    return true;
+  }
+  function resetValues() { for(const [,entry] of topicRows.entries()) { entry.item.value = null; if(entry.valueSpan) entry.valueSpan.textContent = '—'; entry.row.classList.remove('alert-active'); if(entry.item.isState) { const led = document.getElementById(`led-${entry.item.topic.replace(/\//g, '-')}`); if(led) led.className = 'state-indicator'; } } addSystemLog('Toutes les valeurs ont été réinitialisées'); }
+  function loadConfig() {
+    document.getElementById('brokerUrl').value = localStorage.getItem('xpool_broker') || 'ws://192.168.1.100:9001';
+    document.getElementById('clientId').value  = localStorage.getItem('xpool_clientId') || '';
+    document.getElementById('username').value  = localStorage.getItem('xpool_user')     || '';
+    document.getElementById('password').value  = localStorage.getItem('xpool_pass')     || '';
+    document.getElementById('deviceId').value  = localStorage.getItem('xpool_id')       || '000001';
+    document.getElementById('subTopic').value  = localStorage.getItem('xpool_sub')       || 'x-pool_000001/#';
+  }
+  function saveConfig() {
+    localStorage.setItem('xpool_broker',   document.getElementById('brokerUrl').value);
+    localStorage.setItem('xpool_clientId', document.getElementById('clientId').value);
+    localStorage.setItem('xpool_user',     document.getElementById('username').value);
+    localStorage.setItem('xpool_pass',     document.getElementById('password').value);
+    localStorage.setItem('xpool_id',       document.getElementById('deviceId').value);
+    localStorage.setItem('xpool_sub',      document.getElementById('subTopic').value);
+  }
+  function addSystemLog(message, isError = false) { if(!historyBody) return; const entry = document.createElement('div'); entry.className = 'log-item'; entry.style.color = isError ? 'var(--accent3)' : 'var(--accent)'; entry.innerHTML = `<span class="log-time">${new Date().toLocaleTimeString()}</span> — ${message}`; historyBody.prepend(entry); while(historyBody.children.length > 100) historyBody.removeChild(historyBody.lastChild); if(historyBody.querySelector('.no-log')) historyBody.querySelector('.no-log').remove(); }
+  function onMessageArrived(message) { const topic = message.destinationName; const payload = message.payloadString; updateTopicValue(topic, payload); const short = payload.length > 80 ? payload.substring(0,80)+'…' : payload; addSystemLog(`📨 Reçu sur <strong>${topic}</strong> : ${short}`); addTrafficMessage('SUB', topic, payload); }
+  function updateToggleButton(connected) { const btn = document.getElementById('toggleConnectBtn'); if(connected) { btn.textContent = 'Déconnecter'; btn.classList.remove('btn-primary'); btn.classList.add('btn-secondary'); } else { btn.textContent = 'Connecter'; btn.classList.remove('btn-secondary'); btn.classList.add('btn-primary'); } }
+  function connect() { if(client && client.isConnected()) { disconnect(); return; } const brokerUrl = document.getElementById('brokerUrl').value.trim(); if(!brokerUrl) { addSystemLog('URL WebSocket requise', true); return; } let host, port; try { const url = new URL(brokerUrl); host = url.hostname; port = url.port || (url.protocol === 'wss:' ? 443 : 80); } catch(e) { addSystemLog('URL invalide : '+brokerUrl, true); return; } const clientId = document.getElementById('clientId').value.trim() || 'xpool_deck_'+Math.random().toString(36).substr(2,8); saveConfig(); buildDashboard(); try { client = new Paho.MQTT.Client(host, Number(port), clientId); const options = { timeout: 10, onSuccess: onConnect, onFailure: onFailure }; if(document.getElementById('username').value) { options.userName = document.getElementById('username').value; options.password = document.getElementById('password').value; } client.onConnectionLost = onConnectionLost; client.onMessageArrived = onMessageArrived; client.connect(options); addSystemLog(`Connexion à ${host}:${port}…`); } catch(err) { addSystemLog(`Erreur : ${err.message}`, true); } }
+  function onConnect() { addSystemLog('✅ Connecté au broker'); document.getElementById('statusDot').className = 'status-dot connected'; updateToggleButton(true); const subTopic = document.getElementById('subTopic').value.trim(); if(subTopic) { client.subscribe(subTopic); addSystemLog(`Abonné à ${subTopic}`); } else { addSystemLog("Aucun topic d'abonnement spécifié", true); } }
+  function onFailure(err) { addSystemLog(`Échec connexion : ${err.errorMessage}`, true); document.getElementById('statusDot').className = 'status-dot error'; updateToggleButton(false); client = null; }
+  function onConnectionLost(resp) { if(resp.errorCode !== 0) addSystemLog(`Connexion perdue : ${resp.errorMessage}`, true); else addSystemLog('Déconnecté'); document.getElementById('statusDot').className = 'status-dot'; updateToggleButton(false); client = null; }
+  function disconnect() { if(client) { try { if(client.isConnected()) { client.disconnect(); addSystemLog('Déconnecté'); } else { addSystemLog('Pas de connexion active'); } } catch(e) { addSystemLog('Erreur déconnexion : '+e.message, true); } client = null; } else { addSystemLog('Pas de connexion active'); } document.getElementById('statusDot').className = 'status-dot'; updateToggleButton(false); }
+
+  function init() {
+    loadConfig();
+    const deviceIdInput = document.getElementById('deviceId');
+    const subInput = document.getElementById('subTopic');
+    deviceIdInput.addEventListener('change', () => {
+      updateSubscribeFromDeviceId();
+      saveConfig();
+      if (client && client.isConnected()) disconnect();
+      buildDashboard();
+    });
+    subInput.addEventListener('change', () => saveConfig());
+
+    buildDashboard();
+    document.getElementById('toggleConnectBtn').addEventListener('click', () => { if(client && client.isConnected()) disconnect(); else connect(); });
+    document.getElementById('websocketHelpBtn').addEventListener('click', () => { document.getElementById('tutorialModal').style.display = 'flex'; });
+    document.querySelectorAll('.close-modal').forEach(btn => { btn.addEventListener('click', () => { document.getElementById('tutorialModal').style.display = 'none'; document.getElementById('topicsModal').style.display = 'none'; }); });
+    window.addEventListener('click', (e) => { if(e.target === document.getElementById('tutorialModal')) document.getElementById('tutorialModal').style.display = 'none'; if(e.target === document.getElementById('topicsModal')) document.getElementById('topicsModal').style.display = 'none'; });
+    updateToggleButton(false);
+    addSystemLog('Prêt. Entrez l\'ID de votre X-POOL, le topic de souscription, puis connectez-vous.');
+  }
+  init();
+</script>
+
+</body>
+
+</html>

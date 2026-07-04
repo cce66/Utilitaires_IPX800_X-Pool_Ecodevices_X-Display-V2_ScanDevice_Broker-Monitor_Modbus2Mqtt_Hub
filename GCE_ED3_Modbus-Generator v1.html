@@ -1,0 +1,830 @@
+<!--=============================================================================--!>
+<!--  ECODEVICES 3 - Modbus JSON Generator de GCE Electronics  maj 17/05/2026    --!>
+<!--=============================================================================--!>
+
+<!DOCTYPE html>
+<html lang="fr" dir="ltr">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>EDRT3 Modbus JSON Generator v1</title>
+  <!-- Polices -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+
+  <style>
+    /* ---------- RESET ET VARIABLES ---------- */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg:       #0f1117;
+      --panel:    #181c27;
+      --panel2:   #1e2333;
+      --border:   #2a2f3e;
+      --border2:  #2e3a50;
+      --accent:   #6CC04A;
+      --accent2:  #0090ff;
+      --accent3:  #ff6b35;
+      --post:     #d29922;
+      --put:      #388bfd;
+      --delete:   #f85149;
+      --text:     #d4d8e8;
+      --text-dim: #7a809a;
+      --header-h: 58px;
+      --gap:      14px;
+      /* Largeurs des colonnes – modifiables via le panneau "Largeurs" */
+      --col-w-nom:      180px;
+      --col-w-adresse:   80px;
+      --col-w-nb:        70px;
+      --col-w-direction: 125px;
+      --col-w-mode:      220px;
+      --col-w-type:      110px;
+      --col-w-action:     70px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 14px;
+      overflow: hidden;
+    }
+
+    /* ---------- EN-TÊTE FIXE ---------- */
+    header {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+      height: var(--header-h);
+      display: flex; align-items: center; gap: 16px; padding: 0 24px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      box-shadow: 0 2px 20px rgba(0,0,0,.6);
+    }
+
+    .logo { display: flex; align-items: center; gap: 10px; }
+    .logo-icon {
+      width: 110px; height: 32px;
+      background: linear-gradient(135deg, #388bfd 0%, #3fb950 55%);
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'IBM Plex Mono', monospace; font-weight: 600; font-size: 11px;
+      color: #000; flex-shrink: 0;
+    }
+    header h1 { font-family: 'IBM Plex Mono', monospace; font-size: 1rem; font-weight: 600; letter-spacing: .04em; color: #fff; }
+    header h2 { font-size: .75rem; color: var(--text-dim); font-style: italic; font-weight: 400; }
+    .header-sep { flex: 1; }
+
+    /* ---------- INDICATEUR DE STATUT ---------- */
+    .status-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--text-dim); transition: background .3s;
+    }
+    .status-dot.ok  { background: var(--accent);  box-shadow: 0 0 8px var(--accent); }
+    .status-dot.err { background: var(--accent3); box-shadow: 0 0 8px var(--accent3); }
+
+    /* ---------- BOUTONS GÉNÉRIQUES ---------- */
+    .btn {
+      height: 30px; padding: 0 14px; border: none; border-radius: 5px; cursor: pointer;
+      font-family: 'IBM Plex Sans', sans-serif; font-size: 12px; font-weight: 600;
+      transition: opacity .2s, transform .1s; white-space: nowrap;
+    }
+    .btn:active { transform: scale(.97); }
+    .btn-primary   { background: var(--accent); color: #fff; }
+    .btn-primary:hover { opacity: .85; }
+    .btn-secondary { background: var(--border); color: var(--text); }
+    .btn-secondary:hover { background: #343a4e; }
+    .btn-danger    { background: var(--accent3); color: #fff; }
+    .btn-danger:hover { opacity: .85; }
+    .btn-sm        { height: 22px; padding: 0 9px; font-size: 10px; }
+
+    /* ---------- WRAPPER PRINCIPAL ---------- */
+    #wrapper {
+      position: fixed; top: var(--header-h); left: 0; right: 0; bottom: 0;
+      display: flex; flex-direction: column; gap: var(--gap); padding: var(--gap);
+    }
+
+    /* ---------- BARRE DE CONFIGURATION ---------- */
+    .config-bar {
+      flex-shrink: 0;
+      display: flex; flex-wrap: wrap; align-items: center; gap: 12px;
+      background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+      padding: 10px 18px;
+    }
+    .cfg-group {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .cfg-group label {
+      font-family: 'IBM Plex Mono', monospace; font-size: 10px;
+      color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.07em;
+      white-space: nowrap;
+    }
+    .cfg-group input, .cfg-group select {
+      height: 28px; background: var(--bg); border: 1px solid var(--border2);
+      border-radius: 5px; color: var(--accent); padding: 0 9px;
+      font-family: 'IBM Plex Mono', monospace; font-size: 12px;
+      outline: none; transition: border-color .2s;
+    }
+    .cfg-group input:focus, .cfg-group select:focus { border-color: var(--accent2); }
+    .v-sep {
+      width: 1px; height: 24px; background: var(--border);
+    }
+
+    /* Compteur de caractères inline */
+    .inline-counter {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--bg); border: 1px solid var(--border2);
+      border-radius: 5px; padding: 0 6px 0 0;
+      width: 100%;
+    }
+    .inline-counter input {
+      border: none; background: transparent; flex: 1;
+      padding: 6px 0 6px 9px; font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px; color: var(--accent); outline: none;
+    }
+    .inline-counter .char-counter {
+      font-family: 'IBM Plex Mono', monospace; font-size: 10px;
+      color: var(--accent); white-space: nowrap;
+      background: var(--panel2); padding: 2px 6px; border-radius: 12px;
+    }
+
+    /* ---------- LIGNE PRINCIPALE (colonnes) ---------- */
+    .body-row {
+      flex: 1; min-height: 0; display: flex; gap: 0; overflow: hidden;
+    }
+    .col-left {
+      flex: 1.2; display: flex; flex-direction: column;
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 8px; overflow: hidden; min-width: 200px;
+    }
+    .col-right {
+      flex: 0.9; display: flex; flex-direction: column;
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 8px; overflow: hidden; min-width: 200px;
+    }
+    
+    .resizer {
+      flex-shrink: 0; width: 10px; cursor: col-resize;
+      display: flex; align-items: center; justify-content: center; z-index: 10;
+    }
+    .resizer::after {
+      content: ''; width: 2px; height: 44px; border-radius: 2px;
+      background: var(--border); transition: background .2s, height .2s;
+    }
+    .resizer:hover::after { background: var(--accent2); height: 64px; }
+    
+
+    /* En-têtes de panneau */
+    .panel-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 14px; height: 44px; flex-shrink: 0;
+      background: var(--panel2); border-bottom: 1px solid var(--border);
+    }
+    .panel-title {
+      font-family: 'IBM Plex Mono', monospace; font-size: 11px;
+      font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--text-dim);
+    }
+    .panel-title2 {
+      font-family: 'IBM Plex Mono', monospace; font-size: 9px;
+      font-weight: 600; letter-spacing: 0.08em; text-transform: lowercase;
+      color: var(--text-dim);
+    }
+    .panel-badge {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 20px; padding: 1px 8px;
+      font-family: 'IBM Plex Mono', monospace; font-size: 10px;
+      color: var(--text-dim);
+    }
+
+    /* Tableau des commandes */
+    .table-wrapper {
+      flex: 1; overflow-y: auto; overflow-x: auto;
+      padding: 12px;
+    }
+    .cmd-table {
+      width: 100%; border-collapse: collapse; font-size: 12px;
+      min-width: 500px; table-layout: fixed;
+    }
+    .cmd-table th {
+      text-align: left; padding: 8px 6px;
+      font-family: 'IBM Plex Mono', monospace; font-weight: 500;
+      font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--text-dim); border-bottom: 1px solid var(--border2);
+      overflow: hidden;
+    }
+    .cmd-table td {
+      padding: 4px 6px; border-bottom: 1px solid var(--border);
+      vertical-align: middle; overflow: hidden;
+    }
+    .cmd-table tr:last-child td { border-bottom: none; }
+
+    /* Largeurs des colonnes pilotées par les variables CSS */
+    .cmd-table th:nth-child(1), .cmd-table td:nth-child(1) { width: var(--col-w-nom); }
+    .cmd-table th:nth-child(2), .cmd-table td:nth-child(2) { width: var(--col-w-adresse); }
+    .cmd-table th:nth-child(3), .cmd-table td:nth-child(3) { width: var(--col-w-nb); }
+    .cmd-table th:nth-child(4), .cmd-table td:nth-child(4) { width: var(--col-w-direction); }
+    .cmd-table th:nth-child(5), .cmd-table td:nth-child(5) { width: var(--col-w-mode); }
+    .cmd-table th:nth-child(6), .cmd-table td:nth-child(6) { width: var(--col-w-type); }
+    .cmd-table th:nth-child(7), .cmd-table td:nth-child(7) { width: var(--col-w-action); }
+
+    /* Champs input et select dans le tableau :
+       même fond (--bg), même texte vert (--accent), même bordure
+       que le champ "Nom commande" (inline-counter). */
+    .cmd-table input[type="text"],
+    .cmd-table select {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border2);
+      border-radius: 5px;
+      padding: 5px 8px;
+      color: var(--accent);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      outline: none;
+      transition: border-color .2s;
+    }
+    .cmd-table input[type="text"]:focus,
+    .cmd-table select:focus { border-color: var(--accent2); }
+    .cmd-table select option { background: var(--bg); color: var(--accent); }
+
+    .cmd-table input.invalid-address {
+      border-color: var(--accent3);
+      background: rgba(248, 81, 73, 0.1);
+    }
+    .delete-btn {
+      background: transparent; border: 1px solid var(--border2);
+      color: var(--accent3); border-radius: 5px; padding: 5px 8px;
+      font-size: 11px; cursor: pointer; font-weight: 500;
+      transition: all 0.1s; width: 100%;
+    }
+    .delete-btn:hover {
+      background: rgba(248, 81, 73, 0.15);
+      border-color: var(--accent3);
+    }
+    .empty-row-msg {
+      text-align: center; padding: 40px;
+      color: var(--text-dim); font-style: italic;
+    }
+
+    /* ---------- PANNEAU DE CONFIGURATION DES LARGEURS ---------- */
+    .cw-sep { width: 1px; height: 18px; background: var(--border); }
+
+    /* Zone JSON */
+    .json-area {
+      flex: 1; background: #090d14; border: none;
+      color: var(--accent); font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px; padding: 14px; resize: none; outline: none;
+      line-height: 1.6; width: 100%;
+    }
+    .json-footer {
+      display: flex; gap: 8px; padding: 10px 14px;
+      border-top: 1px solid var(--border); background: var(--panel2);
+      flex-wrap: wrap;
+    }
+
+    /* Barre d'état */
+    #status-bar {
+      flex-shrink: 0;
+      display: flex; align-items: center; gap: 16px; padding: 0 16px; height: 28px;
+      background: var(--panel); border: 1px solid var(--border); border-radius: 6px;
+      font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text-dim);
+    }
+    .status-item { display: flex; align-items: center; gap: 6px; }
+    .status-item .value { color: var(--text); }
+    #status-msg { margin-left: auto; }
+
+    /* Scrollbars */
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+  </style>
+  
+</head>
+
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">GCE Electronics</div>
+    <h1>ECODEVICES 3 - Générateur de Configuration Modbus JSON v1</h1>
+  </div>
+  <h2> Créez facilement vos configurations Modbus </h2>
+  <div class="header-sep"></div>
+  <div class="status-dot" id="conn-dot"></div>
+</header>
+
+<div id="wrapper">
+  <!-- Barre de configuration globale -->
+  <div class="config-bar">
+    
+    <div class="cfg-group">
+      <label>Nom de la configuration</label>
+      <div class="inline-counter">
+        <input type="text" id="cfgName" value="Configuration 1" maxlength="31">
+        <span class="char-counter" id="cfgNameCounter">0/31</span>
+      </div>
+    </div>
+    
+    <div class="cfg-group">
+      <label>Numéro Numero de périphérique (0-255)</label>
+      <input type="number" id="cfgSlave" value="0" min="0" max="255" style="width:80px">
+    </div>
+    
+    <div class="cfg-group">
+      <label>Type de conversion</label>
+      <select id="cfgConvert">
+        <option value="0">Pas de conversion</option>
+        <option value="1">Complément à 2</option>
+        <option value="2">IEEE float</option>
+      </select>
+    </div>
+    
+    <div class="cfg-group">
+      <label>Fréquence lecture (ms)</label>
+      <input type="number" id="cfgFreq" value="1000" min="1" max="1000" style="width:90px">
+    </div>
+  </div>
+
+  <!-- Ligne principale avec redimensionnement -->
+  <div class="body-row">
+    <div class="col-left" id="col-left">
+      <div class="panel-header">
+        <div><span class="panel-title">COMMANDES MODBUS </span><span class="panel-badge" id="cmdCounterBadge">0/20</span><span class="panel-title2">  (20 est le nombre maximum de commandes par objet modbus, 32 objets modbus sont possibles)</span></div>
+        <button class="btn btn-primary btn-sm" id="addCommandBtn">+ Ajouter commande</button>
+      </div>
+      <div class="table-wrapper">
+        <table class="cmd-table" id="cmdTable">
+          <thead>
+            <tr>
+              <th>Nom commande</th><th>Adresse (hex)</th><th>NOMBRE</th><th>Direction</th><th>Mode</th><th>Type</th><th style="width:70px">Action</th>
+            </tr>
+          </thead>
+          <tbody id="cmdTbody"></tbody>
+        </table>
+        <div id="emptyMsg" class="empty-row-msg" style="display:none;">Aucune commande. Cliquez sur "Ajouter commande".</div>
+      </div>
+    </div>
+    
+    <div class="resizer" id="resizer"></div>
+    
+    <div class="col-right" id="col-right">
+      <div class="panel-header">
+        <span class="panel-title">APERÇU JSON</span><span class="panel-badge">Valide</span>
+      </div>
+      <textarea id="jsonOutput" class="json-area" readonly placeholder="La configuration JSON s'affichera ici…"></textarea>
+      <div class="json-footer">
+        <input type="file" id="importFile" accept=".json" style="display:none">
+        <div class="header-sep"></div>
+        <button class="btn btn-secondary btn-sm" id="copyBtn">Copier</button>
+        <button class="btn btn-secondary btn-sm" id="importBtn">Importer</button>
+        <button class="btn btn-primary btn-sm" id="downloadBtn">Télécharger</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Barre d'état -->
+  <div id="status-bar">
+    <div class="status-item">État: <span class="value" id="validityText">Prêt</span></div>
+    <div class="">Dernière action: <span class="value" id="lastAction">-</span></div>
+    <span id="status-msg"></span>
+  </div>
+</div>
+
+<script>
+  // ============================================================
+  // 1. DONNÉES ET ÉTAT
+  // ============================================================
+  let commands = [];   // Tableau des commandes modbus
+
+  // Mapping des options de mode selon la direction (rw)
+  const modeOptionsMap = {
+    0: [ { value: 0, label: 'Coils (0x01)' }, { value: 1, label: 'Discrete Inputs (0x02)' }, { value: 2, label: 'Holding Registers (0x03)' }, { value: 3, label: 'Input Registers (0x04)' } ],
+    1: [ { value: 0, label: 'Single Coil (0x05)' }, { value: 1, label: 'Multiple Coils (0x0F)' }, { value: 2, label: 'Single Register (0x06)' }, { value: 3, label: 'Multiple Registers (0x10)' } ],
+    2: [ { value: 0, label: 'Single Coils (0x01/0x05)' }, { value: 1, label: 'Multiple Coils (0x01/0x0F)' }, { value: 2, label: 'Single Holding Regs (0x03/0x06)' }, { value: 3, label: 'Multiple Holding Regs (0x03/0x10)' } ]
+  };
+
+  // ============================================================
+  // 2. FONCTIONS UTILITAIRES
+  // ============================================================
+  function setStatusMsg(msg) {
+    document.getElementById('status-msg').textContent = msg;
+    setTimeout(() => { if (document.getElementById('status-msg').textContent === msg) document.getElementById('status-msg').textContent = ''; }, 3000);
+  }
+
+  function setLastAction(msg) {
+    document.getElementById('lastAction').textContent = msg;
+  }
+
+  function isValidHexAddress(addr) {
+    return typeof addr === 'string' && /^0x[0-9A-Fa-f]{1,6}$/.test(addr);
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
+  }
+
+  // Met à jour le compteur de caractères du nom de configuration
+  function updateConfigNameCounter() {
+    const input = document.getElementById('cfgName');
+    const len = input.value.length;
+    const counter = document.getElementById('cfgNameCounter');
+    counter.innerText = `${len}/31`;
+    if (len > 27) counter.style.color = 'var(--post)';
+    else if (len === 31) counter.style.color = 'var(--accent3)';
+    else counter.style.color = 'var(--accent)';
+  }
+
+  // Met à jour le compteur de caractères d'une commande
+  function updateCmdCharCounter(idx, length) {
+    const span = document.getElementById(`cmdCounter_${idx}`);
+    if (span) {
+      span.innerText = `${length}/31`;
+      if (length > 27) span.style.color = 'var(--post)';
+      else if (length === 31) span.style.color = 'var(--accent3)';
+      else span.style.color = 'var(--accent)';
+    }
+  }
+
+  // Met à jour le badge de compteur de commandes
+  function updateCmdCounterBadge() {
+    const badge = document.getElementById('cmdCounterBadge');
+    const addBtn = document.getElementById('addCommandBtn');
+    const count = commands.length;
+    badge.innerText = `${count}/20`;
+    if (count >= 20) {
+      addBtn.disabled = true;
+      badge.style.color = 'var(--accent3)';
+    } else {
+      addBtn.disabled = false;
+      badge.style.color = 'var(--text-dim)';
+    }
+  }
+
+  // Génère les options <select> pour le mode selon rw
+  function getModeOptionsHtml(rw, currentMode) {
+    const modes = modeOptionsMap[rw] || modeOptionsMap[0];
+    return modes.map(m => `<option value="${m.value}" ${m.value === currentMode ? 'selected' : ''}>${escapeHtml(m.label)}</option>`).join('');
+  }
+
+  // Actualise le sélecteur de mode d'une ligne après changement de direction
+  function refreshModeSelect(row, cmd, idx) {
+    const modeSelect = row.modeSelect;
+    if (modeSelect) {
+      modeSelect.innerHTML = getModeOptionsHtml(cmd.rw, cmd.mode);
+      let maxVal = (modeOptionsMap[cmd.rw]?.length || 4) - 1;
+      let newMode = cmd.mode;
+      if (newMode > maxVal) newMode = 0;
+      if (modeSelect.querySelector(`option[value="${newMode}"]`)) {
+        modeSelect.value = newMode;
+        cmd.mode = newMode;
+      } else {
+        modeSelect.value = 0;
+        cmd.mode = 0;
+      }
+    }
+  }
+
+  // ============================================================
+  // 3. GESTION DU TABLEAU DES COMMANDES
+  // ============================================================
+  function renderTable() {
+    const tbody = document.getElementById('cmdTbody');
+    const emptyMsg = document.getElementById('emptyMsg');
+    tbody.innerHTML = '';
+    if (commands.length === 0) {
+      emptyMsg.style.display = 'block';
+      updateGlobalJSON();
+      return;
+    }
+    emptyMsg.style.display = 'none';
+
+    commands.forEach((cmd, idx) => {
+      const row = tbody.insertRow();
+
+      // --- Colonne Nom commande (avec compteur inline) ---
+      const cellName = row.insertCell(0);
+      const container = document.createElement('div');
+      container.className = 'inline-counter';
+      const nameInput = document.createElement('input');
+      nameInput.type = 'text';
+      nameInput.value = cmd.cmd;
+      nameInput.maxLength = 31;
+      nameInput.placeholder = "Nom commande";
+      const counterSpan = document.createElement('span');
+      counterSpan.className = 'char-counter';
+      counterSpan.id = `cmdCounter_${idx}`;
+      counterSpan.innerText = `${cmd.cmd.length}/31`;
+      nameInput.addEventListener('input', (e) => {
+        let newVal = e.target.value.slice(0, 31);
+        commands[idx].cmd = newVal;
+        updateCmdCharCounter(idx, newVal.length);
+        updateGlobalJSON();
+      });
+      container.appendChild(nameInput);
+      container.appendChild(counterSpan);
+      cellName.appendChild(container);
+
+      // --- Adresse (hex) ---
+      const cellAddr = row.insertCell(1);
+      const addrInput = document.createElement('input');
+      addrInput.type = 'text';
+      addrInput.value = cmd.adress;
+      addrInput.maxLength = 9;
+      addrInput.placeholder = '0x0000';
+      addrInput.addEventListener('input', (e) => {
+        let val = e.target.value.toUpperCase();
+        commands[idx].adress = val;
+        if (!isValidHexAddress(val)) addrInput.classList.add('invalid-address');
+        else addrInput.classList.remove('invalid-address');
+        updateGlobalJSON();
+      });
+      addrInput.addEventListener('blur', () => {
+        let val = addrInput.value.trim();
+        if (!isValidHexAddress(val)) {
+          commands[idx].adress = '0x0000';
+          addrInput.value = '0x0000';
+          addrInput.classList.remove('invalid-address');
+          updateGlobalJSON();
+        }
+      });
+      if (!isValidHexAddress(cmd.adress)) addrInput.classList.add('invalid-address');
+      cellAddr.appendChild(addrInput);
+
+      // --- Nb (1 ou 2) ---
+      const cellNb = row.insertCell(2);
+      const nbSelect = document.createElement('select');
+      nbSelect.innerHTML = `<option value="1" ${cmd.nb === 1 ? 'selected' : ''}>1</option><option value="2" ${cmd.nb === 2 ? 'selected' : ''}>2</option>`;
+      nbSelect.addEventListener('change', (e) => {
+        commands[idx].nb = parseInt(e.target.value);
+        updateGlobalJSON();
+      });
+      cellNb.appendChild(nbSelect);
+
+      // --- Direction (Lecture/Écriture/Lecture+Écriture) ---
+      const cellDir = row.insertCell(3);
+      const dirSelect = document.createElement('select');
+      dirSelect.innerHTML = `<option value="0" ${cmd.rw === 0 ? 'selected' : ''}>Lecture</option>
+                             <option value="1" ${cmd.rw === 1 ? 'selected' : ''}>Écriture</option>
+                             <option value="2" ${cmd.rw === 2 ? 'selected' : ''}>Lecture/Écriture</option>`;
+      dirSelect.addEventListener('change', (e) => {
+        const newRw = parseInt(e.target.value);
+        commands[idx].rw = newRw;
+        if (commands[idx].mode > (modeOptionsMap[newRw]?.length - 1 || 0)) commands[idx].mode = 0;
+        refreshModeSelect(row, commands[idx], idx);
+        updateGlobalJSON();
+      });
+      cellDir.appendChild(dirSelect);
+
+      // --- Mode (dépend de la direction) ---
+      const cellMode = row.insertCell(4);
+      const modeSelect = document.createElement('select');
+      modeSelect.innerHTML = getModeOptionsHtml(cmd.rw, cmd.mode);
+      modeSelect.addEventListener('change', (e) => {
+        commands[idx].mode = parseInt(e.target.value);
+        updateGlobalJSON();
+      });
+      cellMode.appendChild(modeSelect);
+      row.modeSelect = modeSelect;
+
+      // --- Type (analogique / entrée-sortie) ---
+      const cellType = row.insertCell(5);
+      const typeSelect = document.createElement('select');
+      typeSelect.innerHTML = `<option value="ana" ${cmd.type === 'ana' ? 'selected' : ''}>Analogique</option>
+                              <option value="io" ${cmd.type === 'io' ? 'selected' : ''}>Entrée/Sortie</option>`;
+      typeSelect.addEventListener('change', (e) => {
+        commands[idx].type = e.target.value;
+        updateGlobalJSON();
+      });
+      cellType.appendChild(typeSelect);
+
+      // --- Action Supprimer ---
+      const cellAction = row.insertCell(6);
+      const delBtn = document.createElement('button');
+      delBtn.textContent = 'Supprimer';
+      delBtn.className = 'delete-btn';
+      delBtn.addEventListener('click', () => removeCommand(idx));
+      cellAction.appendChild(delBtn);
+    });
+    updateGlobalJSON();
+    updateCmdCounterBadge();
+  }
+
+  function removeCommand(index) {
+    if (index >= 0 && index < commands.length) {
+      commands.splice(index, 1);
+      renderTable();
+      setLastAction(`Commande supprimée`);
+      setStatusMsg(`Commande supprimée`);
+    }
+  }
+
+  function addCommand() {
+    if (commands.length >= 20) {
+      setStatusMsg(`Limite de 20 commandes atteinte`);
+      return;
+    }
+    const newId = commands.length + 1;
+    commands.push({
+      cmd: `Commande_${newId}`,
+      adress: "0x0000",
+      nb: 1,
+      mode: 0,
+      type: "ana",
+      rw: 1   // écriture par défaut
+    });
+    renderTable();
+    setLastAction(`Commande ajoutée`);
+    setStatusMsg(`Commande ajoutée`);
+  }
+
+  // ============================================================
+  // 4. GÉNÉRATION JSON ET VALIDATION
+  // ============================================================
+  function buildConfigObject() {
+    return {
+      name: document.getElementById('cfgName').value,
+      numSlave: Math.min(255, Math.max(0, parseInt(document.getElementById('cfgSlave').value) || 0)),
+      typeConvertion: parseInt(document.getElementById('cfgConvert').value),
+      freq_read: parseInt(document.getElementById('cfgFreq').value) || 1000,
+      read_write: commands
+    };
+  }
+
+  function updateGlobalJSON() {
+    const config = buildConfigObject();
+    document.getElementById('jsonOutput').value = JSON.stringify(config, null, 4);
+
+    // Validation
+    const isNameOk = config.name.length > 0 && config.name.length <= 31;
+    const allAddressesOk = commands.every(cmd => isValidHexAddress(cmd.adress));
+    const allCmdNamesOk = commands.every(cmd => cmd.cmd && cmd.cmd.length <= 31);
+    const isValid = isNameOk && allAddressesOk && allCmdNamesOk && commands.length <= 20;
+
+    const dot = document.getElementById('conn-dot');
+    const validitySpan = document.getElementById('validityText');
+    if (isValid) {
+      dot.className = 'status-dot ok';
+      validitySpan.innerText = 'JSON valide';
+    } else {
+      dot.className = 'status-dot err';
+      validitySpan.innerText = 'Erreur validation';
+    }
+  }
+
+  // ============================================================
+  // 5. IMPORT / EXPORT JSON
+  // ============================================================
+  function importJSONFromFile(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const imported = JSON.parse(e.target.result);
+        if (imported.name !== undefined) {
+          document.getElementById('cfgName').value = imported.name.slice(0, 31);
+          updateConfigNameCounter();
+        }
+        if (imported.numSlave !== undefined) document.getElementById('cfgSlave').value = Math.min(255, Math.max(0, parseInt(imported.numSlave)));
+        if (imported.typeConvertion !== undefined) document.getElementById('cfgConvert').value = imported.typeConvertion;
+        if (imported.freq_read !== undefined) document.getElementById('cfgFreq').value = imported.freq_read;
+        if (imported.read_write && Array.isArray(imported.read_write)) {
+          commands = [];
+          for (let cmd of imported.read_write.slice(0, 20)) {
+            commands.push({
+              cmd: (cmd.cmd || "Importee").slice(0, 31),
+              adress: isValidHexAddress(cmd.adress) ? cmd.adress : "0x0000",
+              nb: (cmd.nb === 1 || cmd.nb === 2) ? cmd.nb : 1,
+              mode: (cmd.mode >= 0 && cmd.mode <= 3) ? cmd.mode : 0,
+              type: (cmd.type === 'ana' || cmd.type === 'io') ? cmd.type : 'ana',
+              rw: (cmd.rw >= 0 && cmd.rw <= 2) ? cmd.rw : 0
+            });
+          }
+          renderTable();
+          updateGlobalJSON();
+          setLastAction(`Importé depuis ${file.name}`);
+          setStatusMsg(`Import réussi`);
+        } else throw new Error("read_write manquant");
+      } catch (err) {
+        alert("Erreur import JSON : " + err.message);
+        setStatusMsg(`Erreur import`);
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  function downloadJSON() {
+    const jsonStr = document.getElementById('jsonOutput').value;
+    const nameCfg = document.getElementById('cfgName').value.replace(/[^a-z0-9]/gi, '_') || 'modbus_config';
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const a = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    a.href = url;
+    a.download = `${nameCfg}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setLastAction(`Téléchargé ${nameCfg}.json`);
+    setStatusMsg(`Fichier sauvegardé`);
+  }
+
+  function copyJSON() {
+    const textarea = document.getElementById('jsonOutput');
+    textarea.select();
+    document.execCommand('copy');
+    const btn = document.getElementById('copyBtn');
+    const original = btn.innerText;
+    btn.innerText = 'Copié !';
+    setTimeout(() => { btn.innerText = original; }, 1500);
+    setLastAction(`JSON copié dans le presse-papiers`);
+    setStatusMsg(`Copié`);
+  }
+
+  // ============================================================
+  // 6. REDIMENSIONNEMENT DES COLONNES
+  // ============================================================
+  function initResizer() {
+    const resizer = document.getElementById('resizer');
+    const leftCol = document.getElementById('col-left');
+    const rightCol = document.getElementById('col-right');
+    let startX, startLeftWidth;
+
+    resizer.addEventListener('mousedown', (e) => {
+      startX = e.clientX;
+      startLeftWidth = leftCol.getBoundingClientRect().width;
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('mouseup', onMouseUp);
+      e.preventDefault();
+    });
+
+    function onMouseMove(e) {
+      const dx = e.clientX - startX;
+      let newLeftWidth = startLeftWidth + dx;
+      const parentWidth = leftCol.parentElement.getBoundingClientRect().width - resizer.getBoundingClientRect().width;
+      if (newLeftWidth >= 200 && (parentWidth - newLeftWidth) >= 200) {
+        leftCol.style.flex = `0 0 ${newLeftWidth}px`;
+        rightCol.style.flex = `1 1 auto`;
+      }
+    }
+
+    function onMouseUp() {
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    }
+  }
+
+  // ============================================================
+  // 7. INITIALISATION
+  // ============================================================
+  function init() {
+    // Données initiales d'exemple
+    commands = [
+      { cmd: "Exemple_Modbus", adress: "0x0001", nb: 1, mode: 0, type: "ana", rw: 1 },
+      { cmd: "Commande_LectEcrit", adress: "0x0010", nb: 1, mode: 3, type: "io", rw: 2 }
+    ];
+    renderTable();
+    updateConfigNameCounter();
+    updateGlobalJSON();
+    initResizer();
+
+    // Événements des contrôles globaux
+    document.getElementById('cfgName').addEventListener('input', () => { updateConfigNameCounter(); updateGlobalJSON(); });
+    document.getElementById('cfgSlave').addEventListener('input', updateGlobalJSON);
+    document.getElementById('cfgConvert').addEventListener('change', updateGlobalJSON);
+    
+    // Validation de la fréquence : avertissement si > 1000, restauration de la valeur précédente
+    const cfgFreqInput = document.getElementById('cfgFreq');
+    let lastValidFreq = parseInt(cfgFreqInput.value) || 1000;
+    cfgFreqInput.addEventListener('change', function() {
+      const val = parseInt(this.value);
+      if (!isNaN(val) && val > 1000) {
+        alert(`⚠️ Attention "Fréquence lecture (ms)":\n la valeur saisie (${val} ms) dépasse la limite de 1000 ms.\nLa valeur va être réinitialisée à ${lastValidFreq} ms.`);
+        this.value = lastValidFreq;
+      } else if (!isNaN(val) && val >= 1) {
+        lastValidFreq = val;
+      }
+      updateGlobalJSON();
+    });
+    cfgFreqInput.addEventListener('input', updateGlobalJSON);
+    
+    document.getElementById('addCommandBtn').addEventListener('click', addCommand);
+    document.getElementById('downloadBtn').addEventListener('click', downloadJSON);
+    document.getElementById('copyBtn').addEventListener('click', copyJSON);
+    document.getElementById('importBtn').addEventListener('click', () => document.getElementById('importFile').click());
+    document.getElementById('importFile').addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) importJSONFromFile(e.target.files[0]);
+      e.target.value = '';
+    });
+  }
+
+  window.onload = init;
+</script>
+
+</body>
+
+</html>

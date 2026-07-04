@@ -1,0 +1,1412 @@
+<!--======================================================================--!>
+<!--  ECODEVICES RT3 - API-DECK v3 de GCE Electronics     maj 24/06/2026  --!>
+<!--======================================================================--!>
+
+<!DOCTYPE html>
+<html lang="fr" dir="ltr">
+
+<head>
+  <meta charset="utf-8">
+  <title>ECODEVICES RT3 - API Deck v3</title>
+
+  <!-- Polices Google -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+
+  <style>
+    /* ---------- RESET ET BOX-MODEL ---------- */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    /* ---------- VARIABLES GLOBALES ---------- */
+    :root {
+      --bg:       #0f1117;      /* fond principal de l'application */
+      --panel:    #181c27;      /* fond des panneaux et de l'en-tête */
+      --panel2:   #1e2333;      /* fond secondaire des en-têtes de panneau */
+      --border:   #2a2f3e;      /* couleur des bordures */
+      --border2:  #2e3a50;      /* bordure légèrement plus claire pour les champs */
+      --accent:   #6CC04A;      /* vert d'accentuation (GET / connexion OK) */
+      --accent2:  #0090ff;      /* bleu pour les diviseurs et le survol */
+      --accent3:  #ff6b35;      /* orange pour les erreurs/danger */
+      --post:     #d29922;      /* jaune pour la méthode POST */
+      --put:      #388bfd;      /* bleu pour la méthode PUT */
+      --delete:   #f85149;      /* rouge pour la méthode DELETE */
+      --text:     #d4d8e8;      /* texte principal clair */
+      --text-dim: #7a809a;      /* texte secondaire/estompé */
+      --header-h: 58px;         /* hauteur fixe de l'en-tête */
+      --gap:      14px;         /* espacement général entre les blocs */
+    }
+
+    /* ---------- STYLES DE BASE ---------- */
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 14px;
+      overflow: hidden;           /* empêche le scroll global – la page est fixe */
+    }
+
+    /* ---------- EN-TÊTE FIXE ---------- */
+    header {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+      height: var(--header-h);
+      display: flex; align-items: center; gap: 16px; padding: 0 24px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      box-shadow: 0 2px 20px rgba(0,0,0,.6);
+    }
+
+    /* Logo : badge coloré + texte produit */
+    .logo { display: flex; align-items: center; gap: 10px; }
+    .logo-icon {
+      width: 110px; height: 32px;
+      background: linear-gradient(135deg, #388bfd 0%, #3fb950 55%);
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'IBM Plex Mono', monospace; font-weight: 600; font-size: 11px;
+      color: #000; flex-shrink: 0;
+    }
+    header h1 { font-family: 'IBM Plex Mono', monospace; font-size: 1rem; font-weight: 600; letter-spacing: .04em; color: #fff; }
+    header h2 { font-size: .75rem; color: var(--text-dim); font-style: italic; font-weight: 400; }
+    .header-sep { flex: 1; }         /* pousse les contrôles vers la droite */
+
+    /* ---------- BARRE DE CONFIGURATION (protocole, IP, clé API) ---------- */
+    .cfg-field { display: flex; align-items: center; gap: 8px; }
+    .cfg-field label {
+      font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-dim);
+      text-transform: uppercase; letter-spacing: .06em; white-space: nowrap;
+    }
+    .cfg-field input, .cfg-field select {
+      height: 30px; background: var(--bg); border: 1px solid var(--border); border-radius: 5px;
+      color: var(--accent);          /* texte en couleur d'accent pour lisibilité */
+      padding: 0 10px; font-family: 'IBM Plex Mono', monospace; font-size: 12px;
+      outline: none; transition: border-color .2s;
+    }
+    .cfg-field input:focus, .cfg-field select:focus { border-color: var(--accent); }
+    #prot-sel    { width: 70px; }
+    #ip-in       { width: 140px; }
+    #apikey-input { width: 200px; }
+        
+    /* ---------- INDICATEUR DE CONNEXION (point lumineux) ---------- */
+    .status-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--text-dim); transition: background .3s;
+    }
+    .status-dot.ok  { background: var(--accent);  box-shadow: 0 0 8px var(--accent); }
+    .status-dot.err { background: var(--accent3); box-shadow: 0 0 8px var(--accent3); }
+
+    /* ---------- BOUTONS GÉNÉRIQUES ---------- */
+    .btn {
+      height: 30px; padding: 0 14px; border: none; border-radius: 5px; cursor: pointer;
+      font-family: 'IBM Plex Sans', sans-serif; font-size: 12px; font-weight: 600;
+      transition: opacity .2s, transform .1s; white-space: nowrap;
+    }
+    .btn:active { transform: scale(.97); }
+    .btn-primary   { background: var(--accent); color: #000; }        /* action principale (Tester) */
+    .btn-primary:hover { opacity: .85; }
+    .btn-secondary { background: var(--border); color: var(--text); } /* action neutre (Copier…) */
+    .btn-secondary:hover { background: #343a4e; }
+    .btn-danger    { background: var(--accent3); color: #fff; }       /* action destructrice (Effacer) */
+    .btn-danger:hover { opacity: .85; }
+    .btn-sm        { height: 22px; padding: 0 9px; font-size: 10px; } /* variante compacte */
+
+    /* Boutons d'action dans les cartes de commande */
+    .btn-go     { background: var(--put);   color: #fff; }     /* Envoyer la requête */
+    .btn-go:hover { opacity: .85; }
+    .btn-copy   { background: var(--border); color: var(--text); }    /* Copier l'URL */
+    .btn-copy:hover { background: #343a4e; }
+    .btn-expand { background: var(--border); color: var(--text); }    /* Déplier / Replier tout */
+    .btn-expand:hover { background: #343a4e; }
+
+    /* ---------- WRAPPER PRINCIPAL (zone sous l'en-tête) ---------- */
+    #wrapper {
+      position: fixed; top: var(--header-h); left: 0; right: 0; bottom: 0;
+      display: flex; flex-direction: column; gap: var(--gap); padding: var(--gap);
+    }
+
+    /* ---------- LIGNE PRINCIPALE (colonnes gauche + droite) ---------- */
+    #body-row { flex: 1; min-height: 0; display: flex; overflow: hidden; align-items: stretch; }
+
+    /* ---------- DIVISEURS VERTICAUX (entre colonnes) ---------- */
+    .divider {
+      flex-shrink: 0; width: 10px; cursor: col-resize;
+      display: flex; align-items: center; justify-content: center; z-index: 10;
+    }
+    .divider::after {
+      content: ''; width: 2px; height: 44px; border-radius: 2px;
+      background: var(--border); transition: background .2s, height .2s;
+    }
+    .divider:hover::after, .divider.dragging::after { background: var(--accent2); height: 64px; }
+
+    /* ---------- DIVISEUR HORIZONTAL (entre Réponse et Historique) ---------- */
+    .h-divider {
+      flex-shrink: 0; height: 10px; cursor: row-resize;
+      display: flex; align-items: center; justify-content: center; z-index: 10;
+      background: transparent;
+    }
+    .h-divider::after {
+      content: ''; width: 44px; height: 2px; border-radius: 2px;
+      background: var(--border); transition: background .2s, width .2s;
+    }
+    .h-divider:hover::after, .h-divider.dragging::after { background: var(--accent2); width: 64px; }
+
+        /* ---------- COLONNES (panneaux flexibles) ---------- */
+    .col { display: flex; flex-direction: column; min-width: 140px; min-height: 0; overflow: hidden; }
+
+    /* Panneau générique : fond, bordure, coins arrondis */
+    .panel {
+      background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+      display: flex; flex-direction: column; overflow: hidden; min-height: 0; flex: 1;
+    }
+
+    /* En-tête de panneau */
+    .ph {
+      display: flex; align-items: center; gap: 8px;
+      padding: 0 14px; height: 36px; flex-shrink: 0;
+      background: var(--panel2); border-bottom: 1px solid var(--border);
+    }
+    .ph-title {
+      font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 600;
+      letter-spacing: .08em; text-transform: uppercase; color: var(--text-dim);
+    }
+    .ph-badge {
+      background: var(--bg); border: 1px solid var(--border); border-radius: 20px;
+      padding: 1px 8px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text-dim);
+    }
+    .ph-right { margin-left: auto; display: flex; align-items: center; gap: 5px; }
+
+    /* Corps scrollable des panneaux */
+    .pb { flex: 1; overflow-y: auto; min-height: 0; }
+    .pb::-webkit-scrollbar { width: 4px; }
+    .pb::-webkit-scrollbar-track { background: transparent; }
+    .pb::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    /* ---------- COLONNE GAUCHE – liste des catégories ---------- */
+    #col-left { margin-right: 0; }
+    .gi {
+      padding: 9px 12px; cursor: pointer; border-bottom: 1px solid var(--border);
+      display: flex; align-items: flex-start; gap: 9px;
+      transition: background .14s; border-left: 2px solid transparent;
+    }
+    .gi:last-child { border-bottom: none; }
+    .gi:hover { background: rgba(255,255,255,.04); }
+    .gi.active { background: rgba(108,192,74,.08); border-left-color: var(--accent); } /* vert GCE */
+    .gi-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .gi-label { font-size: 13px; font-weight: 600; }
+    .gi-desc { font-size: 11px; color: var(--text-dim); margin-top: 1px; }
+
+    /* ---------- COLONNE CENTRALE – liste des commandes ---------- */
+    #col-center { flex: 1; }
+    .cmd-list { padding: 8px; display: flex; flex-direction: column; gap: 5px; }
+
+    /* Carte de commande : pliée par défaut, dépliée avec .open */
+    .card {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 6px; overflow: hidden; transition: border-color .18s;
+    }
+    .card:hover { border-color: var(--border2); }
+    .card.open  { border-color: var(--accent2); } /* bleu quand ouverte */
+
+    .card-head {
+      display: flex; align-items: center; gap: 9px;
+      padding: 9px 13px; cursor: pointer; user-select: none;
+    }
+    /* Badge méthode HTTP coloré (GET / POST / PUT / DELETE) */
+    .mb {
+      font-family: 'IBM Plex Mono', monospace; font-size: 9px; font-weight: 600;
+      padding: 2px 6px; border-radius: 3px; flex-shrink: 0; min-width: 48px; text-align: center;
+    }
+    .mb-get    { background: rgba(108,192,74,.15);  color: var(--accent); }
+    .mb-post   { background: rgba(210,153,34,.15);  color: var(--post); }
+    .mb-put    { background: rgba(56,139,253,.15);  color: var(--put); }
+    .mb-delete { background: rgba(248,81,73,.15);   color: var(--delete); }
+
+    .card-head .cn { font-family: 'IBM Plex Mono', monospace; font-size: 12px; flex: 1.2; color: #f0f6fc; }
+    .card-head .cd { font-size: 11px; color: var(--text-dim); flex: 2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .chev { color: var(--text-dim); font-size: 10px; transition: transform .18s; flex-shrink: 0; }
+    .card.open .chev { transform: rotate(90deg); }
+
+    /* Corps de la carte (formulaire de paramètres + URL preview + boutons) */
+    .card-body { display: none; padding: 12px 14px 13px; border-top: 1px solid var(--border); flex-direction: column; gap: 9px; }
+    .card.open .card-body { display: flex; }
+
+    /* Ligne de formulaire : label + champ */
+    .frow { display: flex; align-items: flex-start; gap: 9px; }
+    .frow label {
+      font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-dim);
+      width: 88px; flex-shrink: 0; padding-top: 5px;
+    }
+    .frow input, .frow select, .frow textarea {
+      flex: 1; background: var(--panel); border: 1px solid var(--border2); border-radius: 4px;
+      color: var(--text); padding: 4px 8px;
+      font-family: 'IBM Plex Mono', monospace; font-size: 12px;
+      outline: none; transition: border-color .2s;
+    }
+    .frow input, .frow select { height: 27px; }
+    .frow textarea { resize: vertical; min-height: 70px; padding: 6px 8px; font-size: 11px; }
+    .frow input:focus, .frow select:focus, .frow textarea:focus { border-color: var(--accent2); }
+    .fhint { font-size: 10px; color: var(--text-dim); font-style: italic; padding-top: 6px; white-space: nowrap; }
+
+    /* Aperçu de l'URL construite dynamiquement */
+    .url-box {
+      font-family: 'IBM Plex Mono', monospace; font-size: 11px;
+      background: #0a0d14; border: 1px solid var(--border); border-radius: 4px;
+      padding: 7px 10px; color: var(--accent); word-break: break-all; line-height: 1.65;
+    }
+    .url-box .dm         { color: var(--text-dim); }    /* parties fixes (protocole, hôte, ?) */
+    .url-box .mt-get     { color: var(--accent); }
+    .url-box .mt-post    { color: var(--post); }
+    .url-box .mt-put     { color: var(--put); }
+    .url-box .mt-delete  { color: var(--delete); }
+
+    /* Boutons d'action en bas de la carte */
+    .card-btns { display: flex; gap: 7px; margin-top: 2px; }
+
+    /* ---------- COLONNE DROITE – Réponse + Historique ---------- */
+    #col-right {
+      display: flex; flex-direction: column;
+      flex-shrink: 0; min-width: 180px; min-height: 0; overflow: hidden;
+    }
+    #resp-panel {
+      flex: 2; min-height: 60px; overflow: hidden;
+      display: flex; flex-direction: column;
+    }
+    #log-panel {
+      flex: 1; min-height: 60px; overflow: hidden;
+      display: flex; flex-direction: column;
+    }
+
+    /* flex:1 + min-height:0 remplit exactement l'espace restant sans déborder */
+    #resp-area {
+      flex: 1; min-height: 0;
+      resize: none; width: 100%;
+      background: #0a0d14; border: none;
+      color: var(--accent);
+      font-family: 'IBM Plex Mono', monospace; font-size: 11px;
+      padding: 12px; outline: none; line-height: 1.7;
+    }
+
+    /* Pied du panneau Réponse (boutons Copier / Effacer) */
+    .resp-foot {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 10px; border-top: 1px solid var(--border); flex-shrink: 0;
+    }
+
+    /* ---------- HISTORIQUE DES REQUÊTES ---------- */
+    .log-item {
+      padding: 8px 12px; border-bottom: 1px solid var(--border);
+      transition: background .12s; cursor: default;
+    }
+    .log-item:last-child { border-bottom: none; }
+    .log-item:hover { background: rgba(255,255,255,.03); }
+    .log-t { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text-dim); margin-bottom: 2px; }
+    .log-u { font-family: 'IBM Plex Mono', monospace; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    /* Couleur de l'URL selon le statut / la méthode */
+    .log-item.ok     .log-u { color: var(--accent); }
+    .log-item.err    .log-u { color: var(--delete); }
+    .log-item.put-c  .log-u { color: var(--put); }
+    .log-item.post-c .log-u { color: var(--post); }
+    .no-log { padding: 20px; text-align: center; color: var(--text-dim); font-size: 12px; font-style: italic; }
+
+    /* ---------- BARRE D'ÉTAT (bas de page) ---------- */
+    #sb {
+      flex-shrink: 0;
+      display: flex; align-items: center; gap: 16px; padding: 0 16px; height: 28px;
+      background: var(--panel); border: 1px solid var(--border); border-radius: 6px;
+      font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text-dim);
+    }
+    .sbi { display: flex; align-items: center; gap: 6px; }
+    .sbi .sv { color: var(--text); }
+    #sbmsg { margin-left: auto; }
+
+    /* ---------- INFOS RÉFÉRENCE DANS LES CARTES ---------- */
+    .ref-block-title {
+      font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: .07em; color: var(--text-dim);
+      margin-bottom: 5px; margin-top: 2px;
+    }
+    .ref-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 2px; }
+    .ref-table th {
+      text-align: left; padding: 3px 8px; color: var(--text-dim);
+      border-bottom: 1px solid var(--border); font-weight: 600;
+      font-family: 'IBM Plex Mono', monospace; font-size: 10px;
+    }
+    .ref-table td { padding: 4px 8px; border-bottom: 1px solid rgba(42,47,62,.4); vertical-align: top; }
+    .ref-table tr:last-child td { border-bottom: none; }
+    .ref-table .tk { font-family: 'IBM Plex Mono', monospace; color: var(--accent2); }
+    .ref-table .tv { font-family: 'IBM Plex Mono', monospace; color: var(--text-dim); font-size: 10px; }
+    .ref-pre {
+      font-family: 'IBM Plex Mono', monospace; font-size: 10px; line-height: 1.6;
+      background: #0a0d14; border: 1px solid var(--border); border-radius: 4px;
+      padding: 8px 10px; color: var(--text); white-space: pre-wrap; word-break: break-all; margin: 0;
+    }
+    .ref-resp-badge {
+      display: inline-block; font-family: 'IBM Plex Mono', monospace; font-size: 10px;
+      padding: 2px 7px; border-radius: 3px; margin-bottom: 5px;
+      background: rgba(108,192,74,.15); color: var(--accent);
+    }
+    .ref-note {
+      font-size: 10px; color: var(--post); line-height: 1.5;
+      background: rgba(210,153,34,.08); border: 1px solid rgba(210,153,34,.2);
+      border-radius: 4px; padding: 6px 9px;
+    }
+    .ref-sep {
+      border: none; border-top: 1px solid var(--border); margin: 4px 0;
+    }
+    /* Intro catégorie dans la colonne Catégories */
+    .gi-intro {
+      font-size: 10px; color: var(--text-dim); margin-top: 3px;
+      line-height: 1.45; font-style: italic;
+    }
+
+  </style>
+</head>
+
+<body>
+
+<!-- ═══ EN-TÊTE FIXE ═══════════════════════════════════════════════════════
+     Contient : logo, titre, champs de configuration et indicateur de statut.
+     La barre de configuration est intégrée dans l'en-tête (comme l'IPX800 V5)
+     plutôt que dans un bloc séparé, pour gagner de la hauteur d'affichage.
+═══════════════════════════════════════════════════════════════════════════ -->
+<header>
+  <!-- Logo GCE et nom du produit -->
+  <div class="logo">
+    <div class="logo-icon">GCE Electronics</div>
+    <h1>ECODEVICES RT3 - API DECK v3</h1>
+  </div>
+
+  <div class="header-sep"></div>
+
+  <!-- Sélecteur de protocole -->
+  <div class="cfg-field">
+    <label>Protocole</label>
+    <select id="prot-sel" onchange="saveConfig();rebuildActive()">
+      <option value="http">HTTP</option>
+      <option value="https">HTTPS</option>
+    </select>
+  </div>
+
+  <!-- Adresse IP / hôte de l'appareil -->
+  <div class="cfg-field">
+    <label>IP</label>
+    <input id="ip-in" type="text" placeholder="192.168.1.100" oninput="saveConfig();rebuildActive()">
+  </div>
+
+  <!-- Clé API -->
+  <div class="cfg-field">
+    <label>ApiKey</label>
+    <input id="apikey-input" type="text" placeholder="votre clé API" oninput="saveConfig();rebuildActive()">
+  </div>
+
+  <!-- Bouton Tester (vérifie la connexion, non bloquant) -->
+  <button class="btn btn-primary" id="testBtn" onclick="testConnection()">Tester</button>
+
+  <!-- Indicateur visuel de connexion (point lumineux) -->
+  <div class="status-dot" id="main-dot"></div>
+</header>
+
+<!-- ═══ ZONE PRINCIPALE ════════════════════════════════════════════════════
+     Flex colonne : ligne des panneaux + barre d'état.
+═══════════════════════════════════════════════════════════════════════════ -->
+<div id="wrapper">
+
+  <!-- ── LIGNE DES PANNEAUX ──────────────────────────────────────────── -->
+  <div id="body-row">
+
+    <!-- COLONNE GAUCHE : liste des catégories -->
+    <div class="col" id="col-left">
+      <div class="panel" style="flex:1">
+        <div class="ph"><span class="ph-title">Catégories</span></div>
+        <div class="pb" id="grp-list"></div>
+      </div>
+    </div>
+
+    <!-- Diviseur vertical redimensionnable (Catégories ↔ Commandes) -->
+    <div class="divider" id="div-left"></div>
+
+    <!-- COLONNE CENTRALE : liste des commandes de la catégorie sélectionnée -->
+    <div class="col" id="col-center">
+      <div class="panel" style="flex:1">
+        <div class="ph">
+          <span class="ph-title" id="center-title">Commandes</span>
+          <div class="ph-badge" id="cmd-count">-</div>
+          <div class="ph-right">
+            <!-- Raccourcis pour déplier / replier toutes les cartes -->
+            <button class="btn btn-sm btn-expand" onclick="expandAll()">⊞ Tout déplier</button>
+            <button class="btn btn-sm btn-expand" onclick="collapseAll()">⊟ Tout replier</button>
+          </div>
+        </div>
+        <div class="pb"><div class="cmd-list" id="cmd-list"></div></div>
+      </div>
+    </div>
+
+    <!-- Diviseur vertical redimensionnable (Commandes ↔ Réponse/Historique) -->
+    <div class="divider" id="div-right"></div>
+
+    <!-- COLONNE DROITE : panneau Réponse + diviseur horizontal + panneau Historique -->
+    <div class="col" id="col-right">
+
+      <!-- Panneau Réponse JSON -->
+      <div class="panel" id="resp-panel">
+        <div class="ph">
+          <span class="ph-title">Réponse</span>
+          <div class="ph-badge" id="resp-stat">-</div>
+          <!-- Boutons Copier et Effacer conservés dans l'en-tête du panneau -->
+          <div class="ph-right">
+            <button class="btn btn-secondary btn-sm" onclick="copyResp()">Copier</button>
+            <button class="btn btn-secondary btn-sm" onclick="clearResp()">Effacer</button>
+          </div>
+        </div>
+        <textarea id="resp-area" readonly placeholder="La réponse JSON apparaîtra ici…"></textarea>
+      </div>
+
+      <!-- Diviseur horizontal redimensionnable (Réponse ↔ Historique) -->
+      <div class="h-divider" id="h-divider-resp-log"></div>
+
+      <!-- Panneau Historique des requêtes -->
+      <div class="panel" id="log-panel">
+        <div class="ph">
+          <span class="ph-title">Historique</span>
+          <!-- Bouton Effacer conservé dans l'en-tête du panneau -->
+          <div class="ph-right">
+            <button class="btn btn-secondary btn-sm" onclick="clearLogs()">Effacer</button>
+          </div>
+        </div>
+        <div class="pb" id="log-list">
+          <div class="no-log">Aucune requête envoyée</div>
+        </div>
+      </div>
+
+    </div><!-- /col-right -->
+
+  </div><!-- /body-row -->
+
+  <!-- ── BARRE D'ÉTAT (informations de débogage bas de page) ─────────── -->
+  <div id="sb">
+    <div class="sbi">Cible&nbsp;: <span class="sv" id="sb-target">-</span></div>
+    <div class="sbi">Dernière&nbsp;: <span class="sv" id="sb-last">-</span></div>
+    <span id="sbmsg"></span>
+  </div>
+
+</div><!-- /wrapper -->
+
+<script>
+// ============================================================
+// 1. DONNÉES (GROUPS) – catalogue des commandes API EDRT3
+// ============================================================
+
+/**
+ * Chaque groupe correspond à une catégorie fonctionnelle de l'API.
+ * Structure d'un groupe :
+ *   id     : identifiant interne
+ *   label  : nom affiché dans la colonne Catégories
+ *   desc   : description courte affichée sous le label
+ *   color  : couleur du point et de la sélection active
+ *   cmds   : tableau des commandes disponibles dans ce groupe
+ *
+ * Structure d'une commande :
+ *   method : verbe HTTP (GET | POST | PUT | DELETE)
+ *   name   : nom court de l'endpoint
+ *   desc   : description fonctionnelle
+ *   path   : chemin de l'URL (les __tokens__ sont remplacés par les params)
+ *   qs     : paramètres de la query-string [ { k: clé, v: valeur } ]
+ *   body   : corps JSON pré-rempli (null si aucun)
+ *   params : liste des champs de saisie dynamiques
+ */
+const GROUPS = [
+  { id:'logs', label:'Logs / Courbes',
+    intro:"L'EcoDevices 3 historise 30 compteurs : index toutes les 15 min sur 5 ans glissants, valeurs min/max/moy toutes les 5 min sur 1 an glissant. Presets disponibles : jour / semaine / mois / annee / total / default.",
+    color:'#3fb950', cmds:[
+    { method:'GET',  name:'Core Logger State',    desc:'État de tous les compteurs',
+      path:'/api/object/core_logger', qs:[{k:'option',v:'filter_state'},{k:'ApiKey',v:'__apikey__'}], body:null,
+      qs_ref:[{k:'option',v:'filter_state'},{k:'ApiKey',v:'{apikey}'}],
+      response:`[
+  {
+    "_id": 851968,
+    "index": 22534,
+    "indexprix": 6206,
+    "moyenne": 95,
+    "instMax": 199,
+    "instMin": 0,
+    "tarif": 0
+  }, …
+]`,
+      note:'index en wH/mL (croissant) · indexprix en centimes (croissant) · valeurs instantanées remises à 0 toutes les 5 min' },
+    { method:'GET',  name:'Core Logger (config)', desc:'Configuration d\'un compteur',
+      path:'/api/object/core_logger/__id__', qs:[{k:'ApiKey',v:'__apikey__'}], body:null,
+      params:[{id:'id',label:'ID compteur',ph:'0–29',hint:'ex: 0'}],
+      qs_ref:[{k:'ApiKey',v:'{apikey}'}],
+      response:`{
+  "_id": 851968,
+  "name": "TIC",
+  "sourceMesure": 1048576,
+  "linkTar": 1114112,
+  "icon": 0,
+  "unit": 0
+}` },
+    { method:'GET',  name:'Courbes – logs',       desc:'Courbes preset / mode / unité',
+      path:'/api/object/core_logger/__id__',
+      qs:[{k:'option',v:'filter_logs'},{k:'debut',v:'__debut__'},{k:'preset',v:'__preset__'},{k:'mode',v:'__mode__'},{k:'unite',v:'__unite__'},{k:'ApiKey',v:'__apikey__'}],
+      body:null,
+      params:[
+        {id:'id',    label:'N° compteur', ph:'0–29',       hint:'ex: 0'},
+        {id:'debut', label:'Début (unix)',ph:'timestamp',   hint:'ex: 1773739204'},
+        {id:'preset',label:'Preset',     ph:'',hint:'',type:'select',options:['jour','semaine','mois','annee','total','default']},
+        {id:'mode',  label:'Mode',       ph:'',hint:'',type:'select',options:['moy','min','max','index']},
+        {id:'unite', label:'Unité',      ph:'',hint:'',type:'select',options:['kwh','euro']},
+      ],
+      qs_ref:[{k:'option',v:'filter_logs'},{k:'debut',v:'{timestamp}'},{k:'preset',v:'jour|semaine|mois|annee|total|default'},{k:'mode',v:'moy|min|max|index'},{k:'unite',v:'kwh|euro'},{k:'ApiKey',v:'{apikey}'}],
+      note:'Points retournés : jour=288 (moy) ou 24 (index) · semaine=287/21 · mois=/24 · annee=/13 · total=/5'},
+    { method:'POST', name:'Create Core Logger',   desc:'Créer un compteur (type 0=standard, 1=injection TIC)',
+      path:'/api/object/core_logger', qs:[{k:'ApiKey',v:'__apikey__'}],
+      body:`{
+  "name": "Mon compteur",
+  "sourceMesure": 11534336,
+  "type": 0
+}`, params:[],
+      note:'Nécessite un redémarrage de l\'appareil pour être appliqué.' },
+    { method:'POST', name:'Effacer logs compteur',desc:'Supprimer les logs (définitif)',
+      path:'/api/object/core_logger/__id__/eraseLogs', qs:[{k:'ApiKey',v:'__apikey__'}], body:null,
+      params:[{id:'id',label:'N° compteur',ph:'0–29',hint:'ex: 0'}],
+      note:'Action irréversible.' },
+    { method:'PUT',  name:'Modifier Core Logger', desc:'Modifier la source d\'un compteur',
+      path:'/api/object/core_logger/__id__', qs:[{k:'ApiKey',v:'__apikey__'}],
+      body:`{
+  "sourceMesure": 11534338
+}`,
+      params:[{id:'id',label:'N° compteur',ph:'0–29',hint:'ex: 20'}] },
+    { method:'DELETE', name:'Delete Core Logger', desc:'Supprimer un Core Logger (redémarrage requis)',
+      path:'/api/object/core_logger', qs:[{k:'ApiKey',v:'__apikey__'}], body:null, params:[],
+      note:'Nécessite un redémarrage de l\'appareil pour être appliqué.' },
+  ]},
+  { id:'tic', label:'TIC / Linky',
+    intro:'Téléinformation EDF. Lecture en temps réel des étiquettes TIC du compteur Linky (PAPP, index HP/HC, tarif courant…).',
+    color:'#d29922', cmds:[
+    { method:'GET', name:'Get TIC State',  desc:'État courant de la téléinformation',
+      path:'/api/object/tic', qs:[{k:'option',v:'filter_state'},{k:'ApiKey',v:'__apikey__'}], body:null },
+    { method:'GET', name:'Get TIC Config', desc:'Configuration de l\'entrée TIC',
+      path:'/api/object/tic', qs:[{k:'ApiKey',v:'__apikey__'}], body:null },
+  ]},
+  { id:'tarif', label:'Tarif',
+    intro:'Gestion des tarifs utilisés pour le calcul des indices de prix des compteurs. La valeur est exprimée en centimes/kWh × 100 (ex : 2516 = 25,16 c€/kWh).',
+    color:'#e3b341', cmds:[
+    { method:'GET',  name:'Get Tarif',    desc:'Récupérer les tarifs configurés',
+      path:'/api/object/tarif', qs:[{k:'ApiKey',v:'__apikey__'}], body:null,
+      response:`{
+  "_id": 1114112,
+  "name": "BASE EDF",
+  "errorStatus": "0x0000",
+  "value": 2516,
+  "tarif": 1
+}` },
+    { method:'POST', name:'Create Tarif', desc:'Créer un nouveau tarif',
+      path:'/api/object/tarif', qs:[{k:'ApiKey',v:'__apikey__'}],
+      body:`{
+  "name": "Mon tarif",
+  "value": 2516
+}`, params:[] },
+    { method:'PUT',  name:'Modifier Tarif',desc:'Modifier un tarif existant',
+      path:'/api/object/tarif/__id__', qs:[{k:'ApiKey',v:'__apikey__'}],
+      body:`{
+  "value": 2800
+}`,
+      params:[{id:'id',label:'ID tarif',ph:'0, 1…',hint:'ex: 0'}] },
+  ]},
+  { id:'planning', label:'Planning / Calendrier',
+    intro:'Planification horaire. Chaque planning contient jusqu\'à 14 créneaux (startTime/endTime). La valeur 65535 indique un créneau désactivé. Les tableaux startDate/endDate contiennent 5 éléments.',
+    color:'#58a6ff', cmds:[
+    { method:'GET',    name:'Get Planning',      desc:'Récupérer tous les plannings',
+      path:'/api/object/planning', qs:[{k:'ApiKey',v:'__apikey__'}], body:null },
+    { method:'POST',   name:'Create Planning',   desc:'Créer un planning',
+      path:'/api/object/planning', qs:[{k:'ApiKey',v:'__apikey__'}], body:null, params:[] },
+    { method:'PUT',    name:'Modifier Planning', desc:'Modifier un planning (tableaux de 14 créneaux)',
+      path:'/api/object/planning/__id__', qs:[{k:'ApiKey',v:'__apikey__'}],
+      body:`{
+  "func": 2,
+  "rec": 2,
+  "startTime": [30000, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535],
+  "endTime":   [31500, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535],
+  "value":     [1230, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  "startDate": [0, 0, 0, 0, 0],
+  "endDate":   [0, 0, 0, 0, 0],
+  "Enable": true,
+  "Output": 0.0
+}`,
+      params:[{id:'id',label:'ID planning',ph:'0, 1…',hint:'ex: 0'}],
+      note:'65535 = créneau désactivé. Tableaux de 14 éléments (startTime/endTime/value) et 5 (startDate/endDate).' },
+    { method:'DELETE', name:'Delete Planning',   desc:'Supprimer un planning',
+      path:'/api/object/planning/__id__', qs:[{k:'ApiKey',v:'__apikey__'}], body:null,
+      params:[{id:'id',label:'ID planning',ph:'0, 1…',hint:'ex: 0'}] },
+  ]},
+  { id:'push', label:'Push',
+    intro:'Notifications HTTP sortantes. Déclenche des requêtes GET/POST vers une URL distante sur événement (changement d\'état, seuil…).',
+    color:'#bc8cff', cmds:[
+    { method:'GET',    name:'Get Push',    desc:'Récupérer les objets Push configurés',
+      path:'/api/object/push', qs:[{k:'ApiKey',v:'__apikey__'}], body:null },
+    { method:'POST',   name:'Create Push', desc:'Créer un objet Push',
+      path:'/api/object/push', qs:[{k:'ApiKey',v:'__apikey__'}],
+      body:`{
+  "addressIP": "192.168.1.106",
+  "SendPush": true,
+  "Uri": "/api/object/core_logger"
+}`, params:[] },
+    { method:'PUT',    name:'Modifier Push',desc:'Modifier un Push existant',
+      path:'/api/object/push/__id__', qs:[{k:'ApiKey',v:'__apikey__'}],
+      body:`{
+  "addressIP": "192.168.1.200",
+  "method": "GET",
+  "Uri": "/api/object/core_logger"
+}`,
+      params:[{id:'id',label:'ID push',ph:'0, 1…',hint:'ex: 0'}] },
+    { method:'PUT',    name:'Send Push',   desc:'Déclencher l\'envoi immédiat d\'un Push',
+      path:'/api/object/push/__id__', qs:[{k:'ApiKey',v:'__apikey__'}],
+      body:`{
+  "SendPush": true
+}`,
+      params:[{id:'id',label:'ID push',ph:'0, 1…',hint:'ex: 0'}] },
+    { method:'DELETE', name:'Delete Push', desc:'Supprimer un objet Push',
+      path:'/api/object/push/__id__', qs:[{k:'ApiKey',v:'__apikey__'}], body:null,
+      params:[{id:'id',label:'ID push',ph:'0, 1…',hint:'ex: 0'}] },
+  ]},
+  { id:'mail', label:'Mail',
+    intro:'Envoi de notifications par e-mail. La configuration du serveur SMTP se fait dans l\'interface web de l\'EcoDevices. Déclencher l\'envoi via l\'API avec SendMail: true.',
+    color:'#f78166', cmds:[
+    { method:'PUT', name:'Send Mail', desc:'Envoyer le mail configuré',
+      path:'/api/object/mail/__id__', qs:[{k:'ApiKey',v:'__apikey__'}],
+      body:`{
+  "SendMail": true
+}`,
+      params:[{id:'id',label:'ID mail',ph:'0, 1…',hint:'ex: 0'}] },
+  ]},
+  { id:'ana', label:'AnaVirtuelles',
+    intro:'Variables analogiques virtuelles (double). Permettent de stocker et partager des valeurs numériques entre scénarios, ou de les lire/écrire via l\'API.',
+    color:'#39d353', cmds:[
+    { method:'GET',    name:'Get AnaVirtuelle',    desc:'Lire une valeur analogique virtuelle',
+      path:'/api/object/anaVirtuelle/__id__', qs:[{k:'ApiKey',v:'__apikey__'}], body:null,
+      params:[{id:'id',label:'ID',ph:'0, 1…',hint:'ex: 0'}] },
+    { method:'PUT',    name:'Modifier AnaVirtuelle',desc:'Écrire une valeur analogique virtuelle',
+      path:'/api/object/anaVirtuelle/__id__', qs:[{k:'ApiKey',v:'__apikey__'}],
+      body:`{
+  "value": 42.5
+}`,
+      params:[{id:'id',label:'ID',ph:'0, 1…',hint:'ex: 0'}] },
+    { method:'DELETE', name:'Delete AnaVirtuelle',  desc:'Supprimer une AnaVirtuelle',
+      path:'/api/object/anaVirtuelle/__id__', qs:[{k:'ApiKey',v:'__apikey__'}], body:null,
+      params:[{id:'id',label:'ID',ph:'0, 1…',hint:'ex: 0'}] },
+  ]},
+  { id:'timer', label:'Timer',
+    intro:'Générateur de signaux temporisés (impulsions). Produit un signal ON pendant taValue secondes/minutes, puis OFF pendant tbValue. bSecond=true → secondes, false → minutes.',
+    color:'#ffa657', cmds:[
+    { method:'GET',  name:'Get Timer',    desc:'Lire l\'état et la configuration d\'un Timer',
+      path:'/api/object/timer/__id__', qs:[{k:'ApiKey',v:'__apikey__'}], body:null,
+      params:[{id:'id',label:'ID timer',ph:'0, 1…',hint:'ex: 0'}],
+      response:`{
+  "_id": 1638400,
+  "name": "PULSE N°0",
+  "errorStatus": "0x0000",
+  "bSecond": false,
+  "bStart": false,
+  "bState": false,
+  "taValue": 20,
+  "tbValue": 2
+}` },
+    { method:'POST', name:'Create Timer', desc:'Créer un Timer',
+      path:'/api/object/timer', qs:[{k:'ApiKey',v:'__apikey__'}], body:null, params:[] },
+    { method:'PUT',  name:'Modifier / Démarrer Timer',desc:'Configurer et/ou démarrer un Timer',
+      path:'/api/object/timer/__id__', qs:[{k:'ApiKey',v:'__apikey__'}],
+      body:`{
+  "bSecond": true,
+  "bStart": true,
+  "taValue": 5,
+  "tbValue": 2
+}`,
+      params:[{id:'id',label:'ID timer',ph:'0, 1…',hint:'ex: 0'}] },
+  ]},
+  { id:'ext', label:'Extensions',
+    intro:'Extensions GCE connectées via bus EBX : X8R (8 relais), XTHL (capteur température/humidité/luminosité), XDISPLAY V2 (écran tactile). Les mesures XTHL sont retournées en double.',
+    color:'#79c0ff', cmds:[
+    { method:'GET',    name:'Get X8R',      desc:'Liste des extensions X8R et leur état',
+      path:'/api/ebx/x8r', qs:[{k:'ApiKey',v:'__apikey__'}], body:null },
+    { method:'POST',   name:'Create X8R',   desc:'Créer un objet X8R',
+      path:'/api/ebx/x8r', qs:[], body:null, params:[],
+      note:'Aucun ApiKey ni body requis selon la documentation officielle.' },
+    { method:'PUT',    name:'Modifier X8R', desc:'Modifier la configuration d\'une extension X8R',
+      path:'/api/ebx/x8r/__id__', qs:[{k:'ApiKey',v:'__apikey__'}],
+      body:`{
+  "codeExt": "2000047E",
+  "bConnect": true
+}`,
+      params:[{id:'id',label:'N° X8R',ph:'0, 1…',hint:'ex: 0'}] },
+    { method:'DELETE', name:'Delete X8R',   desc:'Supprimer un objet X8R',
+      path:'/api/ebx/x8r', qs:[], body:null, params:[],
+      note:'Aucun ApiKey ni body requis selon la documentation officielle.' },
+    { method:'GET',    name:'Get XTHL',     desc:'Liste des capteurs XTHL (temp/hum/lux)',
+      path:'/api/ebx/xthl', qs:[{k:'ApiKey',v:'__apikey__'}], body:null },
+    { method:'POST',   name:'Create XDISPLAY', desc:'Créer un objet XDISPLAY',
+      path:'/api/ebx/xdisplay', qs:[{k:'ApiKey',v:'__apikey__'}],
+      body:`{
+  "codeExt": "0b000101"
+}`, params:[] },
+    { method:'PUT',    name:'Modifier XDISPLAY', desc:'Rafraîchir / configurer un XDISPLAY',
+      path:'/api/ebx/xdisplay/__id__', qs:[{k:'ApiKey',v:'__apikey__'}],
+      body:`{
+  "bRefresh": true,
+  "consoName": "Conso",
+  "consoEnergy": "Energy"
+}`,
+      params:[{id:'id',label:'N° XDISPLAY',ph:'0, 1…',hint:'ex: 0'}] },
+    { method:'DELETE', name:'Delete XDISPLAY', desc:'Supprimer un objet XDISPLAY',
+      path:'/api/ebx/xdisplay/__id__', qs:[{k:'ApiKey',v:'__apikey__'}], body:null,
+      params:[{id:'id',label:'N° XDISPLAY',ph:'0, 1…',hint:'ex: 0'}] },
+  ]},
+  { id:'weather', label:'Weather',
+    intro:'Plugin météo utilisant l\'API gratuite OpenWeatherMap. Fournit température, pression, humidité, vitesse du vent, lever/coucher du soleil, prévisions (XXXXNextDays). Clé OWM de 40 caractères requise.',
+    color:'#76e3ea', cmds:[
+    { method:'GET', name:'Get Weather',       desc:'Données météo actuelles',
+      path:'/api/plugin/weather', qs:[{k:'ApiKey',v:'__apikey__'}], body:null,
+      note:'Champs : sunriseTime, sunsetTime, isDay, temperature, pressure, humidity, windSpeed, clouds, levels, XXXXNextDays' },
+    { method:'PUT', name:'Configurer Weather',desc:'Activer le plugin et définir la position GPS',
+      path:'/api/plugin/weather', qs:[{k:'ApiKey',v:'__apikey__'}],
+      body:`{
+  "bEnable": true,
+  "apiKey": "votre_clé_owm",
+  "position": "48.8566,2.3522"
+}`, params:[] },
+  ]},
+  { id:'system', label:'Système',
+    intro:'Commandes système de l\'EcoDevices RT3. Ces endpoints ne sont pas documentés officiellement dans la collection Postman GCE — à vérifier sur appareil réel.',
+    color:'#ff7b72', cmds:[
+    { method:'POST', name:'Reboot',
+      desc:'Redémarrer l\'EcoDevices RT3',
+      path:'/api/system/reboot', qs:[{k:'ApiKey',v:'__apikey__'}], body:null, params:[],
+      note:'Endpoint non documenté officiellement. À confirmer sur appareil réel.' },
+  ]},
+  { id:'modbus', label:'Modbus',
+    intro:"Lecture et écriture d'objets via le protocole Modbus RTU/TCP intégré à l'EcoDevices RT3.",
+    color:'#d2a8ff', cmds:[
+    { method:'GET', name:'Get Modbus Object',desc:'Lire un objet Modbus',
+      path:'/api/object/modbus/__id__', qs:[{k:'ApiKey',v:'__apikey__'}], body:null,
+      params:[{id:'id',label:'ID objet',ph:'0, 1…',hint:'ex: 0'}] },
+    { method:'GET', name:'Export Modbus',    desc:'Exporter la configuration Modbus complète',
+      path:'/api/object/modbus', qs:[{k:'option',v:'export'},{k:'ApiKey',v:'__apikey__'}], body:null },
+    { method:'PUT', name:'Écriture Modbus',  desc:'Écrire une valeur Modbus',
+      path:'/api/object/modbus/__id__', qs:[{k:'ApiKey',v:'__apikey__'}],
+      body:`{
+  "value": 100
+}`,
+      params:[{id:'id',label:'ID objet',ph:'0, 1…',hint:'ex: 0'}] },
+  ]},
+];
+
+// ============================================================
+// 2. ÉTAT ET CORRESPONDANCES
+// ============================================================
+
+/** Correspondance méthode HTTP → classe CSS du badge coloré */
+const mbClass = { GET:'mb-get', POST:'mb-post', PUT:'mb-put', DELETE:'mb-delete' };
+
+/** Identifiant du groupe actuellement sélectionné */
+let activeGrp = GROUPS[0].id;
+
+// ============================================================
+// 3. CONFIGURATION (localStorage)
+// ============================================================
+
+/** Accesseurs pour les champs de l'en-tête (retournent la valeur ou un placeholder) */
+const ip     = () => document.getElementById('ip-in').value.trim()        || 'ED3';
+const apikey = () => document.getElementById('apikey-input').value.trim();
+const prot   = () => document.getElementById('prot-sel').value;
+
+/**
+ * Charge la configuration sauvegardée depuis le localStorage
+ * et met à jour l'affichage cible dans la barre d'état.
+ */
+function loadConf() {
+  document.getElementById('ip-in').value       = localStorage.getItem('edrt_ip')     || '';
+  document.getElementById('apikey-input').value = localStorage.getItem('edrt_apikey') || '';
+  document.getElementById('prot-sel').value     = localStorage.getItem('edrt_prot')   || 'http';
+  document.getElementById('sb-target').textContent = prot() + '://' + ip();
+}
+
+/**
+ * Sauvegarde les valeurs actuelles des champs de configuration
+ * et rafraîchit la cible affichée dans la barre d'état.
+ */
+function saveConfig() {
+  localStorage.setItem('edrt_ip',     document.getElementById('ip-in').value);
+  localStorage.setItem('edrt_apikey', document.getElementById('apikey-input').value);
+  localStorage.setItem('edrt_prot',   document.getElementById('prot-sel').value);
+  document.getElementById('sb-target').textContent = prot() + '://' + ip();
+}
+
+// ============================================================
+// 4. FONCTIONS D'AJOUT DANS L'HISTORIQUE (système et commandes)
+// ============================================================
+
+/**
+ * Ajoute un message système dans l'historique (comme la V5)
+ * @param {string} msg - Message à afficher
+ * @param {boolean} isError - true pour orange, false pour vert
+ */
+function addSystemLog(msg, isError = false) {
+  const list = document.getElementById('log-list');
+  if (!list) return;
+  // Supprime l'élément "Aucune requête" s'il est présent
+  const emptyMsg = list.querySelector('.no-log');
+  if (emptyMsg) emptyMsg.remove();
+
+  const div = document.createElement('div');
+  div.className = 'log-item ' + (isError ? 'err' : 'ok');
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString();
+  div.innerHTML = `<div class="log-t">${timeStr} · système</div>
+                   <div class="log-u" style="color:${isError ? 'var(--delete)' : 'var(--accent)'}">${msg}</div>`;
+  list.insertBefore(div, list.firstChild);
+  // Limiter à 25 entrées
+  while (list.children.length > 25) list.removeChild(list.lastChild);
+}
+
+/**
+ * Test de connexion : envoie une requête GET simple et log dans l'historique
+ */
+async function testConnection() {
+  const url = `${prot()}://${ip()}/api/object/core_logger?option=filter_state&ApiKey=${apikey() || 'APIKEY'}`;
+  // Log du début du test
+  addSystemLog(`🔌 Test de connexion vers ${url}...`);
+  const t0 = Date.now();
+  try {
+    const r = await fetch(url, { mode: 'cors' });
+    const elapsed = Date.now() - t0;
+    if (r.ok) {
+      addSystemLog(`✅ Connexion réussie (${elapsed} ms)`);
+      setDot('ok');
+      setMsg(`✅ Connecté (${elapsed} ms)`);
+    } else {
+      addSystemLog(`❌ Erreur HTTP ${r.status} (${elapsed} ms)`, true);
+      setDot('err');
+      setMsg(`❌ HTTP ${r.status}`);
+    }
+  } catch(e) {
+    addSystemLog(`❌ Connexion impossible : ${e.message}`, true);
+    setDot('err');
+    setMsg(`❌ ${e.message}`);
+  }
+}
+
+// ============================================================
+// 5. REDIMENSIONNEMENT (colonnes horizontales + réponse/historique)
+// ============================================================
+
+/**
+ * Initialise tous les diviseurs redimensionnables :
+ *   - div-left  : entre Catégories et Commandes
+ *   - div-right : entre Commandes et Réponse/Historique
+ *   - h-divider-resp-log : entre Réponse et Historique (axe vertical)
+ * Les largeurs et le ratio vertical sont persistés dans localStorage.
+ */
+function initResizers() {
+  const bodyRow   = document.getElementById('body-row');
+  const colLeft   = document.getElementById('col-left');
+  const colCenter = document.getElementById('col-center');
+  const colRight  = document.getElementById('col-right');
+
+  const DIV_W = 20; // 2 diviseurs × 10px
+  const MIN_COL = 140;
+
+  /** Largeur disponible pour les 3 colonnes */
+  function totalW() { return bodyRow.offsetWidth - DIV_W; }
+
+  /** Applique les 3 largeurs en px et sauvegarde les ratios */
+  function applyCols(l, c, r) {
+    colLeft.style.flex   = `0 0 ${l}px`;
+    colCenter.style.flex = `0 0 ${c}px`;
+    colRight.style.flex  = `0 0 ${r}px`;
+    const tot = l + c + r;
+    if (tot > 0) localStorage.setItem('ed3_cols_ratio', JSON.stringify([l/tot, c/tot, r/tot]));
+  }
+
+  /** Répartit les 3 colonnes selon des ratios (défaut: tiers égaux) */
+  function applyRatios(ratios) {
+    const tot = totalW();
+    if (tot <= 0) return;
+    let [rl, rc, rr] = ratios;
+    let l = Math.round(tot * rl);
+    let c = Math.round(tot * rc);
+    let r = tot - l - c; // le reste va à droite pour éviter les arrondis
+    // Appliquer les minimums
+    if (l < MIN_COL) { l = MIN_COL; }
+    if (c < MIN_COL) { c = MIN_COL; }
+    if (r < MIN_COL) { r = MIN_COL; }
+    applyCols(l, c, r);
+  }
+
+  // Restauration ou initialisation
+  const savedRatio = localStorage.getItem('ed3_cols_ratio');
+  const savedPx    = localStorage.getItem('ed3_cols'); // ancienne clé px
+  if (savedRatio) {
+    try { setTimeout(() => applyRatios(JSON.parse(savedRatio)), 0); }
+    catch { setTimeout(() => applyRatios([1/3, 1/3, 1/3]), 0); }
+  } else if (savedPx) {
+    // Migration ancien format px → ratios
+    try {
+      const [l, c, r] = JSON.parse(savedPx);
+      const tot = l + c + r;
+      setTimeout(() => applyRatios([l/tot, c/tot, r/tot]), 0);
+    } catch { setTimeout(() => applyRatios([1/3, 1/3, 1/3]), 0); }
+  } else {
+    setTimeout(() => applyRatios([1/3, 1/3, 1/3]), 0);
+  }
+
+  /** Attache le drag sur un diviseur entre colA et colB */
+  function makeDragger(divider, colA, colB) {
+    divider.addEventListener('mousedown', e => {
+      const startX = e.clientX;
+      const startA = colA.offsetWidth;
+      const startB = colB.offsetWidth;
+      divider.classList.add('dragging');
+      document.body.style.cssText += ';cursor:col-resize;user-select:none';
+
+      const onMove = e => {
+        const dx = e.clientX - startX;
+        const newA = Math.max(MIN_COL, startA + dx);
+        const newB = Math.max(MIN_COL, startB - dx);
+        colA.style.flex = `0 0 ${newA}px`;
+        colB.style.flex = `0 0 ${newB}px`;
+        // Sauvegarder les ratios actuels
+        const l = colLeft.offsetWidth, c = colCenter.offsetWidth, r = colRight.offsetWidth;
+        const tot = l + c + r;
+        if (tot > 0) localStorage.setItem('ed3_cols_ratio', JSON.stringify([l/tot, c/tot, r/tot]));
+      };
+      const onUp = () => {
+        divider.classList.remove('dragging');
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+      };
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+      e.preventDefault();
+    });
+  }
+
+  makeDragger(document.getElementById('div-left'),  colLeft,  colCenter);
+  makeDragger(document.getElementById('div-right'), colCenter, colRight);
+
+  // Recalcul proportionnel des 3 colonnes au resize fenêtre
+  window.addEventListener('resize', () => {
+    const savedR = localStorage.getItem('ed3_cols_ratio');
+    if (savedR) {
+      try { applyRatios(JSON.parse(savedR)); } catch {}
+    }
+  });
+
+  // ── Redimensionnement vertical (Réponse / Historique) ──────────────────
+  const respPanel = document.getElementById('resp-panel');
+  const logPanel  = document.getElementById('log-panel');
+  const hDivider  = document.getElementById('h-divider-resp-log');
+  const MIN_H = 60;
+
+  function getTotalAvailableHeight() {
+    return colRight.getBoundingClientRect().height - hDivider.offsetHeight;
+  }
+
+  function applyHeights(respH, logH) {
+    respPanel.style.flex   = 'none';
+    logPanel.style.flex    = 'none';
+    respPanel.style.height = respH + 'px';
+    logPanel.style.height  = logH  + 'px';
+    const total = respH + logH;
+    if (total > 0) localStorage.setItem('ed3_vert_ratio', respH / total);
+  }
+
+  function restoreVerticalRatio() {
+    const ratio = localStorage.getItem('ed3_vert_ratio');
+    const total = getTotalAvailableHeight();
+    if (ratio !== null && total > 0) {
+      let respH = Math.max(MIN_H, Math.min(total - MIN_H, total * parseFloat(ratio)));
+      let logH  = total - respH;
+      if (respH >= MIN_H && logH >= MIN_H) { applyHeights(respH, logH); return; }
+    }
+    respPanel.style.flex = respPanel.style.height = '';
+    logPanel.style.flex  = logPanel.style.height  = '';
+  }
+
+  let startY = 0, startRespH = 0, startLogH = 0, containerH = 0;
+
+  hDivider.addEventListener('mousedown', (e) => {
+    startY     = e.clientY;
+    startRespH = respPanel.offsetHeight;
+    startLogH  = logPanel.offsetHeight;
+    containerH = startRespH + startLogH;
+    hDivider.classList.add('dragging');
+    document.body.style.cursor     = 'row-resize';
+    document.body.style.userSelect = 'none';
+
+    const onMove = (mv) => {
+      const dy = mv.clientY - startY;
+      let newRespH = startRespH + dy;
+      let newLogH  = containerH - newRespH;
+      if (newRespH < MIN_H) { newRespH = MIN_H; newLogH = containerH - MIN_H; }
+      if (newLogH  < MIN_H) { newLogH  = MIN_H; newRespH = containerH - MIN_H; }
+      if (newRespH >= MIN_H && newLogH >= MIN_H && (newRespH + newLogH) === containerH) {
+        applyHeights(newRespH, newLogH);
+      }
+    };
+    const onUp = () => {
+      hDivider.classList.remove('dragging');
+      document.body.style.cursor = document.body.style.userSelect = '';
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    e.preventDefault();
+  });
+
+  // Recalcul vertical au resize fenêtre
+  window.addEventListener('resize', () => {
+    if (respPanel.style.height && logPanel.style.height) {
+      const totalOld = parseFloat(respPanel.style.height) + parseFloat(logPanel.style.height);
+      const totalNew = getTotalAvailableHeight();
+      if (totalOld > 0 && totalNew > 0) {
+        const ratio  = parseFloat(respPanel.style.height) / totalOld;
+        let newRespH = Math.max(MIN_H, Math.min(totalNew - MIN_H, totalNew * ratio));
+        let newLogH  = totalNew - newRespH;
+        if (newRespH >= MIN_H && newLogH >= MIN_H) applyHeights(newRespH, newLogH);
+      }
+    }
+  });
+
+  setTimeout(restoreVerticalRatio, 50);
+}
+
+// ============================================================
+// 6. RENDU DES GROUPES (colonne Catégories)
+// ============================================================
+
+/**
+ * Reconstruit la liste des catégories dans la colonne gauche.
+ * Chaque élément indique sa couleur et si c'est le groupe actif.
+ */
+function renderGroups() {
+  document.getElementById('grp-list').innerHTML = GROUPS.map(g => `
+    <div class="gi ${g.id === activeGrp ? 'active' : ''}" onclick="selectGrp('${g.id}')">
+      <div class="gi-dot" style="background:${g.color}; flex-shrink:0; margin-top:3px;"></div>
+      <div style="min-width:0;">
+        <div class="gi-label" style="color:${g.id === activeGrp ? g.color : 'var(--text)'}">${g.label}</div>
+        <div class="gi-intro">${g.intro}</div>
+      </div>
+    </div>`).join('');
+}
+
+/**
+ * Sélectionne un groupe, rafraîchit la liste des catégories
+ * et charge les commandes correspondantes dans la colonne centrale.
+ * @param {string} id - Identifiant du groupe à activer
+ */
+function selectGrp(id) {
+  activeGrp = id;
+  renderGroups();
+  const g = GROUPS.find(x => x.id === id);
+  document.getElementById('center-title').textContent = g.label;
+  document.getElementById('cmd-count').textContent    = g.cmds.length + ' commande' + (g.cmds.length > 1 ? 's' : '');
+  renderCmds(g);
+}
+
+// ============================================================
+// 7. RENDU DES COMMANDES (colonne Commandes)
+// ============================================================
+
+/**
+ * Génère le HTML de toutes les cartes de commande pour un groupe.
+ * Chaque carte est pliée par défaut et s'ouvre au clic sur son en-tête.
+ * @param {Object} g - Le groupe à afficher
+ */
+function renderCmds(g) {
+  document.getElementById('cmd-list').innerHTML = g.cmds.map((c, i) => {
+    const mc = mbClass[c.method] || 'mb-get';
+
+    // Génération des champs de paramètres (input texte ou select)
+    const paramsHtml = (c.params || []).map(p => {
+      if (p.type === 'select') {
+        return `<div class="frow"><label>${p.label}</label>
+          <select id="${g.id}-${i}-${p.id}" onchange="rebuild('${g.id}',${i})">
+            ${p.options.map(o => `<option value="${o}">${o || '(aucune)'}</option>`).join('')}
+          </select></div>`;
+      }
+      return `<div class="frow"><label>${p.label}</label>
+        <input type="text" id="${g.id}-${i}-${p.id}" placeholder="${p.ph}" oninput="rebuild('${g.id}',${i})">
+        ${p.hint ? `<span class="fhint">${p.hint}</span>` : ''}</div>`;
+    }).join('');
+
+    // Champ Corps JSON (si la commande en a un)
+    const bodyHtml = c.body !== null ? `
+      <div class="frow"><label>Corps JSON</label>
+        <textarea id="${g.id}-${i}-body">${c.body || ''}</textarea>
+      </div>` : '';
+
+    // ── Bloc Référence (query string officielle, réponse exemple, note) ──
+    const qsRef = c.qs_ref || c.qs;
+    const qsRefHtml = qsRef.length ? `
+      <div>
+        <div class="ref-block-title">Query string</div>
+        <table class="ref-table">
+          <thead><tr><th>Clé</th><th>Valeur</th></tr></thead>
+          <tbody>${qsRef.map(q => `<tr><td class="tk">${q.k}</td><td class="tv">${q.v}</td></tr>`).join('')}</tbody>
+        </table>
+      </div>` : '';
+
+    const responseHtml = c.response ? `
+      <div>
+        <div class="ref-block-title">Exemple de réponse</div>
+        <span class="ref-resp-badge">200 OK</span>
+        <pre class="ref-pre">${c.response.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre>
+      </div>` : '';
+
+    const noteHtml = c.note ? `
+      <div class="ref-note">⚠ ${c.note}</div>` : '';
+
+    const hasRef = qsRef.length || c.response || c.note;
+    const refBlock = hasRef ? `<hr class="ref-sep">${qsRefHtml}${responseHtml}${noteHtml}` : '';
+
+    return `<div class="card" id="card-${g.id}-${i}">
+      <div class="card-head" onclick="toggleCard('${g.id}',${i})">
+        <span class="mb ${mc}">${c.method}</span>
+        <span class="cn">${c.name}</span>
+        <span class="cd">${c.desc}</span>
+        <span class="chev">▶</span>
+      </div>
+      <div class="card-body">
+        ${paramsHtml}
+        ${bodyHtml}
+        <div class="url-box" id="up-${g.id}-${i}"></div>
+        <div class="card-btns">
+          <button class="btn btn-go btn-sm" onclick="sendCmd('${g.id}',${i})">Envoyer</button>
+          <button class="btn btn-sm btn-copy" onclick="copyUrl('${g.id}',${i})">Copier URL</button>
+        </div>
+        ${refBlock}
+      </div>
+    </div>`;
+  }).join('');
+
+  // Premier rendu de l'URL pour chaque commande après injection du HTML
+  g.cmds.forEach((_, i) => rebuild(g.id, i));
+}
+
+/**
+ * Bascule l'état ouvert/fermé d'une carte de commande.
+ * @param {string} gid - Identifiant du groupe
+ * @param {number} i   - Index de la commande dans le groupe
+ */
+function toggleCard(gid, i) {
+  document.getElementById(`card-${gid}-${i}`).classList.toggle('open');
+  rebuild(gid, i);
+}
+
+/** Déplie toutes les cartes du groupe actif */
+function expandAll() {
+  document.querySelectorAll('.card').forEach(c => c.classList.add('open'));
+  const g = GROUPS.find(x => x.id === activeGrp);
+  if (g) g.cmds.forEach((_, i) => rebuild(activeGrp, i));
+}
+
+/** Replie toutes les cartes du groupe actif */
+function collapseAll() {
+  document.querySelectorAll('.card').forEach(c => c.classList.remove('open'));
+}
+
+// ============================================================
+// 8. CONSTRUCTION DE L'URL (URL Builder)
+// ============================================================
+
+/**
+ * Construit l'URL complète d'une commande en substituant
+ * les __tokens__ par les valeurs saisies dans les champs.
+ * @returns {{ full: string, path: string, qs: string }}
+ */
+function buildUrl(gid, i) {
+  const g      = GROUPS.find(x => x.id === gid);
+  const c      = g.cmds[i];
+  const params = c.params || [];
+
+  // Collecte des valeurs saisies dans les champs de paramètres
+  const pv = {};
+  params.forEach(p => {
+    const el = document.getElementById(`${gid}-${i}-${p.id}`);
+    pv[p.id] = el ? el.value.trim() : '';
+  });
+
+  // Substitution des __tokens__ dans le chemin
+  let path = c.path;
+  params.forEach(p => { path = path.replace(`__${p.id}__`, pv[p.id] || p.ph); });
+
+  // Substitution dans la query-string
+  const qs = c.qs.map(q => {
+    let v = q.v;
+    if (v === '__apikey__') v = apikey() || 'APIKEY';
+    params.forEach(p => { v = v.replace(`__${p.id}__`, pv[p.id] || p.ph); });
+    return `${q.k}=${encodeURIComponent(v)}`;
+  }).join('&');
+
+  return { full: `${prot()}://${ip()}${path}?${qs}`, path, qs };
+}
+
+/**
+ * Rafraîchit l'aperçu de l'URL dans la boîte url-box d'une commande.
+ * Colore les différentes parties (méthode, protocole/hôte, paramètres).
+ */
+function rebuild(gid, i) {
+  const el = document.getElementById(`up-${gid}-${i}`);
+  if (!el) return;
+  const g  = GROUPS.find(x => x.id === gid);
+  const c  = g.cmds[i];
+  const mc = c.method.toLowerCase();
+  const { path, qs } = buildUrl(gid, i);
+  el.innerHTML = `<span class="mt-${mc}">${c.method}</span> <span class="dm">${prot()}://${ip()}</span>${path}<span class="dm">?</span>${qs}`;
+}
+
+/**
+ * Reconstruit toutes les URL du groupe actif (utilisé quand l'IP change).
+ */
+function rebuildActive() {
+  const g = GROUPS.find(x => x.id === activeGrp);
+  if (g) g.cmds.forEach((_, i) => rebuild(activeGrp, i));
+}
+
+// ============================================================
+// 9. ENVOI DES REQUÊTES
+// ============================================================
+
+/**
+ * Envoie la requête HTTP correspondant à la commande spécifiée.
+ * Affiche le résultat dans la zone Réponse et journalise dans l'Historique.
+ * @param {string} gid - Identifiant du groupe
+ * @param {number} i   - Index de la commande
+ */
+async function sendCmd(gid, i) {
+  const g      = GROUPS.find(x => x.id === gid);
+  const c      = g.cmds[i];
+  const { full } = buildUrl(gid, i);
+  const method = c.method;
+
+  // Récupération du corps JSON si applicable
+  let bodyStr = null;
+  if (c.body !== null) {
+    const ta = document.getElementById(`${gid}-${i}-body`);
+    bodyStr = ta ? ta.value.trim() : null;
+  }
+
+  setMsg('Envoi…');
+  const t0 = Date.now();
+  try {
+    const opts = { method, mode: 'cors', headers: { 'Content-Type': 'application/json' } };
+    if (bodyStr && method !== 'GET') opts.body = bodyStr;
+    const r       = await fetch(full, opts);
+    const elapsed = Date.now() - t0;
+
+    // Lecture de la réponse (JSON ou texte brut)
+    let txt;
+    const ct = r.headers.get('content-type') || '';
+    if (ct.includes('json')) { const j = await r.json(); txt = JSON.stringify(j, null, 2); }
+    else txt = await r.text();
+
+    setResp(txt || '(réponse vide)');
+    document.getElementById('resp-stat').textContent = r.status + ' ' + r.statusText;
+    addLog(full, method, r.ok, r.status, elapsed);
+    setDot(r.ok ? 'ok' : 'err');
+    setMsg('Réponse reçue en ' + elapsed + ' ms');
+  } catch(e) {
+    setResp('Erreur : ' + e.message);
+    document.getElementById('resp-stat').textContent = 'Erreur';
+    addLog(full, method, false, 0, Date.now() - t0);
+    setDot('err');
+    setMsg('Échec de la requête');
+  }
+  document.getElementById('sb-last').textContent = new Date().toLocaleTimeString();
+}
+
+// ============================================================
+// 10. FONCTIONS UTILITAIRES
+// ============================================================
+
+/** Affiche un texte dans la zone Réponse */
+function setResp(t) { document.getElementById('resp-area').value = t; }
+
+/** Efface la zone Réponse et réinitialise le badge de statut */
+function clearResp() { setResp(''); document.getElementById('resp-stat').textContent = '-'; }
+
+/** Copie le contenu de la zone Réponse dans le presse-papiers */
+function copyResp() {
+  navigator.clipboard.writeText(document.getElementById('resp-area').value).catch(() => {});
+  setMsg('Copié !');
+}
+
+/**
+ * Copie l'URL construite d'une commande dans le presse-papiers.
+ * @param {string} gid - Identifiant du groupe
+ * @param {number} i   - Index de la commande
+ */
+function copyUrl(gid, i) {
+  navigator.clipboard.writeText(buildUrl(gid, i).full).catch(() => {});
+  setMsg('URL copiée');
+}
+
+/** Affiche un message dans la barre d'état */
+function setMsg(m) { document.getElementById('sbmsg').textContent = m; }
+
+/**
+ * Met à jour le point d'indicateur de connexion.
+ * @param {string} s - 'ok' (vert) | 'err' (orange) | '' (neutre)
+ */
+function setDot(s) { document.getElementById('main-dot').className = 'status-dot ' + (s || ''); }
+
+/**
+ * Ajoute une entrée dans le panneau Historique.
+ * Conserve au maximum 25 entrées (les plus anciennes sont supprimées).
+ * @param {string}  url    - URL de la requête envoyée
+ * @param {string}  method - Verbe HTTP utilisé
+ * @param {boolean} ok     - true si la réponse HTTP est 2xx
+ * @param {number}  status - Code de statut HTTP
+ * @param {number}  ms     - Durée de la requête en millisecondes
+ */
+function addLog(url, method, ok, status, ms) {
+  const list = document.getElementById('log-list');
+  list.querySelector('.no-log')?.remove();   // retire le message "Aucune requête"
+  const mc  = method.toLowerCase();
+  const cls = ok ? (mc === 'get' ? 'ok' : mc === 'post' ? 'post-c' : mc === 'put' ? 'put-c' : 'ok') : 'err';
+  const div = document.createElement('div');
+  div.className = 'log-item ' + cls;
+  div.innerHTML = `<div class="log-t">${new Date().toLocaleTimeString()} · ${method} · ${status} · ${ms}ms</div>
+    <div class="log-u" title="${url}">${url}</div>`;
+  list.insertBefore(div, list.firstChild);
+  // Limitation à 25 entrées dans l'historique
+  while (list.children.length > 25) list.removeChild(list.lastChild);
+}
+
+/** Efface tout l'historique des requêtes */
+function clearLogs() {
+  document.getElementById('log-list').innerHTML = '<div class="no-log">Aucune requête envoyée</div>';
+}
+
+// ============================================================
+// 11. INITIALISATION
+// ============================================================
+
+/**
+ * Point d'entrée principal.
+ * Exécuté au chargement de la page (window.onload).
+ */
+window.onload = () => {
+  loadConf();              // restauration des champs de configuration
+  initResizers();          // activation des diviseurs redimensionnables
+  renderGroups();          // affichage de la liste des catégories
+  selectGrp(GROUPS[0].id); // sélection du premier groupe par défaut
+  setDot('');              // point neutre (gris)
+  setMsg('Prêt – vous pouvez envoyer des commandes ou tester la connexion.');
+};
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1102 @@
+<!--======================================================================-->
+<!--  IPX800 V4 - API-DECK v5 - GCE Electronics           maj 07/06/2026  -->
+<!--======================================================================-->
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>IPX800 V4 - API Deck v5</title>
+  <!-- Polices Google -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+
+<style>
+
+  /* ---------- 1. VARIABLES GLOBALES (couleurs, espacements) ---------- */
+  :root {
+    --bg:         #0f1117;      /* fond principal de la page */
+    --panel:      #181c27;      /* fond des panneaux (colonnes, en-tête) */
+    --border:     #2a2f3e;      /* couleur des bordures et séparateurs */
+    --accent:     #6CC04A;      /* vert – accent (bouton Tester, OK) */
+    --accent2:    #0090ff;      /* bleu – survol des diviseurs, GET */
+    --accent3:    #ff6b35;      /* orange – erreurs, Clear */
+    --text:       #d4d8e8;      /* texte principal clair */
+    --text-dim:   #7a809a;      /* texte secondaire (labels, badges) */
+    --header-h:   58px;         /* hauteur fixe de l'en-tête */
+    --gap:        14px;         /* espacement général entre les panneaux */
+  }
+
+  /* ---------- 2. RÉINITIALISATION GLOBALE ---------- */
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 14px;
+    overflow: hidden;           /* empêche le scroll global (géré dans les panneaux) */
+  }
+
+  /* ---------- 3. EN-TÊTE FIXE (logo, champs de config, bouton Tester) ---------- */
+  header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--header-h);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 0 24px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    box-shadow: 0 2px 20px rgba(0, 0, 0, 0.6);
+  }
+
+  /* Logo GCE Electronics (dégradé bleu/vert) */
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo-icon {
+    width: 110px;
+    height: 32px;
+    background: linear-gradient(135deg, #388bfd 0%, #3fb950 55%);
+    border-radius: 6px;
+    display: flex; 
+    align-items: center;
+    justify-content: center;
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 600;
+    font-size: 11px;
+    color: #000;
+    flex-shrink: 0;
+  }
+  
+  header h1 {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #fff;
+  }
+
+  /* séparateur flexible pour pousser les champs à droite */
+  .header-sep {
+    flex: 1;
+  }
+
+  /* champs de configuration (protocole, IP, clé API) */
+  .cfg-field {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .cfg-field label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .cfg-field input,
+  .cfg-field select {
+    height: 30px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    color: var(--accent);         /* texte vert dans les champs */
+    padding: 0 10px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .cfg-field input:focus,
+  .cfg-field select:focus {
+    border-color: var(--accent);
+  }
+
+  /* tailles spécifiques pour les champs (comme dans la V5) */
+  #v4-ip       { width: 120px; }
+  #v4-apikey   { width: 160px; }
+  #v4-prot     { width: 70px; }
+
+  /* ---------- 4. BOUTONS GÉNÉRIQUES ---------- */
+  .btn {
+    height: 30px;
+    padding: 0 14px;
+    border: none;
+    border-radius: 5px;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+  }
+
+  .btn:active {
+    transform: scale(0.97);
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #000;
+  }
+  .btn-primary:hover { opacity: 0.85; }
+
+  .btn-secondary {
+    background: var(--border);
+    color: var(--text);
+  }
+  .btn-secondary:hover { background: #343a4e; }
+
+  /* indicateur de statut (rond vert/orange/gris) */
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--text-dim);
+    transition: background 0.3s;
+  }
+  .status-dot.ok {
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+  }
+  .status-dot.err {
+    background: var(--accent3);
+    box-shadow: 0 0 8px var(--accent3);
+  }
+
+  /* ---------- 5. WRAPPER PRINCIPAL (sous l'en-tête) ---------- */
+  #wrapper {
+    position: fixed;
+    top: var(--header-h);
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap);
+    padding: var(--gap);
+  }
+
+  /* ligne principale qui contient les colonnes + panneau droit */
+  #body-row {
+    flex: 1;
+    min-height: 0;
+    min-width: 0;
+    display: flex;
+    overflow: hidden;
+  }
+
+  /* ---------- 6. DIVISEURS (redimensionnement) ---------- */
+  /* diviseurs verticaux (entre colonnes) */
+  .horiz-divider {
+    flex-shrink: 0;
+    width: 10px;
+    cursor: col-resize;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+  }
+  .horiz-divider::after {
+    content: '';
+    width: 2px;
+    height: 44px;
+    border-radius: 2px;
+    background: var(--border);
+    transition: background 0.2s, height 0.2s;
+  }
+  .horiz-divider:hover::after,
+  .horiz-divider.dragging::after {
+    background: var(--accent2);
+    height: 64px;
+  }
+
+  /* diviseur horizontal (entre réponse et historique) */
+  .vert-divider {
+    flex-shrink: 0;
+    height: 10px;
+    cursor: row-resize;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+  }
+  .vert-divider::after {
+    content: '';
+    width: 44px;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--border);
+    transition: background 0.2s, width 0.2s;
+  }
+  .vert-divider:hover::after,
+  .vert-divider.dragging::after {
+    background: var(--accent2);
+    width: 64px;
+  }
+
+  /* ---------- 7. COLONNES (groupes, commandes, détail) ---------- */
+  .col {
+    display: flex;
+    flex-direction: column;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    min-width: 140px;
+  }
+
+  /* ensemble des trois colonnes de gauche */
+  #left-columns {
+    display: flex;
+    flex: 0 0 auto;
+    gap: 0;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  /* répartition des largeurs (modifiable par redimensionnement) */
+  #col-groups { flex: 1; }
+  #col-cmds   { flex: 1; }
+  #col-detail { flex: 1.5; }
+
+  /* ---------- 8. PANNEAU DROIT (réponse + historique) ---------- */
+  #right-panel {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  #resp-panel,
+  #log-panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  #resp-panel { flex: 2; min-height: 80px; }
+  #log-panel  { flex: 1; min-height: 60px; }
+
+  /* ---------- 9. EN-TÊTES DES PANNEAUX ---------- */
+  .panel-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 14px;
+    height: 36px;
+    background: #1e2333;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .panel-header span {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+  .panel-badge {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 1px 8px;
+    font-size: 10px;
+    color: var(--text-dim);
+  }
+  .ph-right {
+    margin-left: auto;
+    display: flex;
+    gap: 5px;
+  }
+
+  /* contenu scrollable des panneaux */
+  .col-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0;
+  }
+  .col-content::-webkit-scrollbar {
+    width: 4px;
+  }
+  .col-content::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 4px;
+  }
+
+  /* ---------- 10. LISTES (groupes et commandes) ---------- */
+  .group-item,
+  .cmd-item {
+    cursor: pointer;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+  }
+  .group-item:hover,
+  .cmd-item:hover {
+    background: rgba(255, 255, 255, 0.04);
+  }
+  .group-item.selected,
+  .cmd-item.selected {
+    background: rgba(108, 192, 74, 0.08);
+    border-right: 2px solid var(--accent);
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  /* ---------- 11. DÉTAIL DE LA COMMANDE (paramètres, aperçu URL, actions) ---------- */
+  .detail-content {
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .detail-content b {
+    color: var(--text-dim);
+    font-size: 11px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  /* ligne de champ de saisie (label + input/select) */
+  .field-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+  }
+  .field-row label {
+    width: 100px;
+    font-size: 11px;
+    color: var(--text-dim);
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .field-row input,
+  .field-row select {
+    flex: 1;
+    height: 28px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+    padding: 0 8px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    outline: none;
+  }
+  .field-row input:focus,
+  .field-row select:focus {
+    border-color: var(--accent2);
+  }
+
+  /* aperçu de l'URL générée */
+  .url-preview {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    background: #0a0d14;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 8px;
+    color: var(--accent);
+    word-break: break-all;
+  }
+
+  /* groupe des boutons Envoyer / Copier URL */
+  .cmd-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 6px;
+  }
+
+  /* ---------- 12. ZONE DE RÉPONSE (textarea JSON) ---------- */
+  #resp-area {
+    flex: 1;
+    resize: none;
+    background: #0a0d14;
+    color: var(--accent);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    padding: 12px;
+    border: none;
+    outline: none;
+  }
+
+  /* ---------- 13. HISTORIQUE DES REQUÊTES ---------- */
+  #logs-container {
+    flex: 1;
+    overflow-y: auto;
+  }
+  .log-item {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    font-size: 10px;
+  }
+  .log-date {
+    color: var(--text-dim);
+    margin-bottom: 2px;
+  }
+  .log-err {
+    color: var(--accent3);
+  }
+  .no-log {
+    padding: 20px;
+    text-align: center;
+    color: var(--text-dim);
+    font-style: italic;
+  }
+
+  /* ---------- 14. BARRE D'ÉTAT EN BAS ---------- */
+  #sb {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 0 16px;
+    height: 28px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+  }
+  #sb .sb-item {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  #sb .sb-val {
+    color: var(--text);
+  }
+  #sbmsg {
+    margin-left: auto;
+  }
+</style>
+
+</head>
+
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">GCE Electronics</div><h1>IPX800 V4 - API Deck v5</h1>
+  </div>
+  <div class="header-sep"></div>
+  <div class="cfg-field"><label>Protocole</label><select id="v4-prot"><option value="http">HTTP</option><option value="https">HTTPS</option></select></div>
+  <div class="cfg-field"><label>IP</label><input type="text" id="v4-ip" placeholder="192.168.1.100"></div>
+  <div class="cfg-field"><label>API Key</label><input type="text" id="v4-apikey" placeholder="apikey-IPX800V4"></div>
+  <button id="testBtn" class="btn btn-primary">Tester</button>
+  <div class="status-dot" id="main-dot"></div>
+</header>
+<div id="wrapper">
+  <div id="body-row">
+    <div id="left-columns">
+      <!-- Colonne 1 : Groupes -->
+      <div class="col" id="col-groups">
+        <div class="panel-header"><span>Groupes</span></div>
+        <div class="col-content" id="groups-list"></div>
+      </div>
+      <div class="horiz-divider" id="div-gc"></div>
+      <!-- Colonne 2 : Commandes du groupe (instances) -->
+      <div class="col" id="col-cmds">
+        <div class="panel-header"><span>Commandes</span><div class="panel-badge" id="cmd-count">0</div></div>
+        <div class="col-content" id="cmds-list"></div>
+      </div>
+      <div class="horiz-divider" id="div-cd"></div>
+      <!-- Colonne 3 : Détail / paramètres -->
+      <div class="col" id="col-detail">
+        <div class="panel-header"><span>Élément</span></div>
+        <div class="col-content" id="detail-content"><div class="detail-content" style="text-align:center;color:var(--text-dim);">Sélectionnez une commande</div></div>
+      </div>
+    </div>
+    <div class="horiz-divider" id="div-main"></div>
+    <!-- Panneau droit -->
+    <div id="right-panel">
+      <div id="resp-panel">
+        <div class="panel-header"><span>Réponse</span><div class="ph-right"><button class="btn btn-secondary" onclick="copyResp()">Copier</button><button class="btn btn-secondary" onclick="clearResp()">Effacer</button></div></div>
+        <textarea id="resp-area" readonly placeholder="Réponse JSON..."></textarea>
+      </div>
+      <div class="vert-divider" id="div-vert"></div>
+      <div id="log-panel">
+        <div class="panel-header"><span>Historique</span><div class="ph-right"><button class="btn btn-secondary" onclick="clearLogs()">Effacer</button></div></div>
+        <div id="logs-container"><div class="no-log">Aucune requête</div></div>
+      </div>
+    </div>
+  </div>
+  <div id="sb">
+    <div class="sb-item">Cible : <span class="sb-val" id="sb-target">-</span></div>
+    <div class="sb-item">Dernière : <span class="sb-val" id="sb-last">-</span></div>
+    <span id="sbmsg"></span>
+  </div>
+</div>
+
+<script>
+// ==================== DONNÉES EXACTES DE L'API V4 (reprises du fichier d'origine) ====================
+const groups = [
+  {
+    id:'get', label:'Get', desc:'Lire l\'état', color:'#0090ff',
+    cmds:[
+      { name:'Get=R',     desc:'État des 56 relais',                  method:'get', arg:'Get', val:'R',     params:[] },
+      { name:'Get=D',     desc:'État des 56 entrées digitales',        method:'get', arg:'Get', val:'D',     params:[] },
+      { name:'Get=A',     desc:'4 entrées analogiques',               method:'get', arg:'Get', val:'A',     params:[] },
+      { name:'Get=C',     desc:'État des 16 compteurs',               method:'get', arg:'Get', val:'C',     params:[] },
+      { name:'Get=VI',    desc:'128 entrées virtuelles',              method:'get', arg:'Get', val:'VI',    params:[] },
+      { name:'Get=VO',    desc:'128 sorties virtuelles',              method:'get', arg:'Get', val:'VO',    params:[] },
+      { name:'Get=VA',    desc:'32 entrées analogiques virtuelles',   method:'get', arg:'Get', val:'VA',    params:[] },
+      { name:'Get=PW',    desc:'32 ping watchdog',                    method:'get', arg:'Get', val:'PW',    params:[] },
+      { name:'Get=FP',    desc:'État des 16 zones X-4FP',            method:'get', arg:'Get', val:'FP',    params:[] },
+      { name:'Get=SMS',   desc:'Dernier SMS reçu (X-GSM)',           method:'get', arg:'Get', val:'SMS',   params:[] },
+      { name:'Get=G',     desc:'24 voies X-Dimmer',                  method:'get', arg:'Get', val:'G',     params:[] },
+      { name:'Get=T',     desc:'Consignes des 16 thermostats',       method:'get', arg:'Get', val:'T',     params:[] },
+      { name:'Get=X010V', desc:'État des extensions X-010V',         method:'get', arg:'Get', val:'X010V', params:[] },
+      { name:'Get=XENO',  desc:'État des périphériques Enocean',     method:'get', arg:'Get', val:'XENO',  params:[] },
+      { name:'Get=VR',    desc:'État des volets roulants',           method:'get', arg:'Get', val:'VR',
+        params:[{ id:'ext', label:'N° extension', placeholder:'0=toutes, 1-8', hint:'ex: 0' }] },
+      { name:'Get=XPWM',  desc:'État des canaux PWM',                method:'get', arg:'Get', val:'XPWM',
+        params:[{ id:'range', label:'Canal(x)', placeholder:'ex: 12 ou 1-24', hint:'vide=tous' }] },
+      { name:'Get=XDMX',  desc:'État des canaux DMX',               method:'get', arg:'Get', val:'XDMX',
+        params:[{ id:'range', label:'Canal(x)', placeholder:'ex: 002 ou 1-512', hint:'obligatoire' }] },
+      { name:'Get=all',   desc:'Tous les états (JSON uniquement)',   method:'get', arg:'Get', val:'all',   params:[] },
+    ]
+  },
+  {
+    id:'set', label:'Set', desc:'Mettre à 1 / modifier', color:'#6CC04A',
+    cmds:[
+      { name:'SetR',     desc:'Mettre un relais à 1',             method:'set', arg:'SetR',    val:'',
+        params:[{ id:'num', label:'N° relais', placeholder:'01 à 56', hint:'ex: 01' }] },
+      { name:'SetVO',    desc:'Mettre une sortie virtuelle à 1',  method:'set', arg:'SetVO',   val:'',
+        params:[{ id:'num', label:'N° sortie', placeholder:'001 à 128', hint:'ex: 001' }] },
+      { name:'SetVI',    desc:'Mettre une entrée virtuelle à 1',  method:'set', arg:'SetVI',   val:'',
+        params:[{ id:'num', label:'N° entrée', placeholder:'001 à 128', hint:'ex: 001' }] },
+      { name:'SetVA',    desc:'Modifier une entrée analogique virtuelle', method:'set', arg:'SetVA', val:'',
+        params:[
+          { id:'num', label:'N° VA', placeholder:'01 à 32', hint:'ex: 01' },
+          { id:'val', label:'Valeur', placeholder:'0 à 65535', hint:'ex: 1000' }
+        ]},
+      { name:'SetC',     desc:'Modifier un compteur',             method:'set', arg:'SetC',    val:'',
+        params:[
+          { id:'num', label:'N° compteur', placeholder:'01 à 16 (vide=tous)', hint:'ex: 01' },
+          { id:'val', label:'Valeur',      placeholder:'0, +2, -50 …',         hint:'ex: 0 ou +10 ou -5' }
+        ]},
+      { name:'SetFP',    desc:'Piloter une zone Fil Pilote',      method:'set', arg:'SetFP',   val:'',
+        params:[
+          { id:'zone', label:'Zone', placeholder:'00 à 16', hint:'00=toutes' },
+          { id:'mode', label:'Mode', placeholder:'', hint:'', type:'select', options:['0 - Confort','1 - Eco','2 - Hors Gel','3 - Arrêt','4 - Confort -1','5 - Confort -2'] }
+        ]},
+      { name:'SetVR',    desc:'Piloter un volet roulant (%)',     method:'set', arg:'SetVR',   val:'',
+        params:[
+          { id:'num', label:'N° volet',  placeholder:'01 à 32 (vide=tous)', hint:'ex: 02' },
+          { id:'val', label:'Position %', placeholder:'0 à 100', hint:'ex: 50' }
+        ]},
+      { name:'SetPulse', desc:'Impulsions BSO (haut/bas)',        method:'set', arg:'SetPulse', val:'',
+        params:[
+          { id:'dir', label:'Direction', placeholder:'', hint:'', type:'select', options:['UP','DOWN'] },
+          { id:'num', label:'N° BSO',    placeholder:'01 à 32', hint:'ex: 05' },
+          { id:'cnt', label:'Nb impulsions', placeholder:'1 à 127', hint:'ex: 20' }
+        ]},
+      { name:'SetThermo', desc:'Configurer un thermostat',       method:'set', arg:'SetThermo', val:'',
+        params:[
+          { id:'id',   label:'ID thermostat', placeholder:'0 à 15', hint:'ex: 0' },
+          { id:'cons', label:'Consigne',       placeholder:'ex: 21.6', hint:'optionnel' },
+          { id:'hys',  label:'Hystérésis',     placeholder:'ex: 2',   hint:'optionnel' },
+          { id:'cp',   label:'Cons+',          placeholder:'ex: 0.5', hint:'optionnel' },
+          { id:'cm',   label:'Cons-',          placeholder:'ex: 0.5', hint:'optionnel' }
+        ]},
+      { name:'SetEnoPC', desc:'Actionneur Enocean à 1',          method:'set', arg:'SetEnoPC', val:'',
+        params:[{ id:'num', label:'N° actionneur', placeholder:'1 à 24', hint:'ex: 8' }] },
+      { name:'SetEnoVR', desc:'Volet roulant Enocean (%)',        method:'set', arg:'SetEnoVR', val:'',
+        params:[
+          { id:'num', label:'N° volet',   placeholder:'01 à 24', hint:'ex: 01' },
+          { id:'val', label:'Position %', placeholder:'0 à 100', hint:'ex: 50' }
+        ]},
+      { name:'SetG',     desc:'Dimmer (% + rampe)',               method:'set', arg:'SetG',    val:'',
+        params:[
+          { id:'num',  label:'N° voie',   placeholder:'01 à 24 (vide=toutes)', hint:'ex: 01' },
+          { id:'val',  label:'Valeur %',  placeholder:'0-100, 101=last', hint:'ex: 75' },
+          { id:'time', label:'Rampe (ms)',placeholder:'optionnel', hint:'ex: 500' }
+        ]},
+      { name:'Set010v',  desc:'Extension X-010V',                method:'set', arg:'Set010v',  val:'',
+        params:[
+          { id:'ext', label:'N° extension', placeholder:'1, 2…', hint:'ex: 1' },
+          { id:'cha', label:'N° canal',     placeholder:'1, 2…', hint:'ex: 1' },
+          { id:'val', label:'Valeur',       placeholder:'0-100, 101=toggle', hint:'ex: 50' }
+        ]},
+      { name:'SetSMS',   desc:'Envoyer un SMS via X-GSM',        method:'set', arg:'SetSMS',  val:'',
+        params:[
+          { id:'num', label:'Destinataire', placeholder:'+33601020304', hint:'numéro complet' },
+          { id:'msg', label:'Message',      placeholder:'Votre message', hint:'ex: Test GCE' }
+        ]},
+    ]
+  },
+  {
+    id:'clear', label:'Clear', desc:'Mettre à 0', color:'#ff6b35',
+    cmds:[
+      { name:'ClearR',     desc:'Mettre un relais à 0',            method:'clear', arg:'ClearR',    val:'',
+        params:[{ id:'num', label:'N° relais',    placeholder:'01 à 56',  hint:'ex: 02' }] },
+      { name:'ClearVO',    desc:'Mettre une sortie virtuelle à 0', method:'clear', arg:'ClearVO',   val:'',
+        params:[{ id:'num', label:'N° sortie',    placeholder:'001 à 128', hint:'ex: 002' }] },
+      { name:'ClearVI',    desc:'Mettre une entrée virtuelle à 0', method:'clear', arg:'ClearVI',   val:'',
+        params:[{ id:'num', label:'N° entrée',    placeholder:'001 à 128', hint:'ex: 002' }] },
+      { name:'ClearEnoPC', desc:'Actionneur Enocean à 0',          method:'clear', arg:'ClearEnoPC',val:'',
+        params:[{ id:'num', label:'N° actionneur',placeholder:'1 à 24',   hint:'ex: 7' }] },
+    ]
+  },
+  {
+    id:'toggle', label:'Toggle', desc:'Inverser l\'état', color:'#f0b400',
+    cmds:[
+      { name:'ToggleR',     desc:'Toggler un relais',             method:'toggle', arg:'ToggleR',    val:'',
+        params:[{ id:'num', label:'N° relais',    placeholder:'01 à 56',  hint:'ex: 03' }] },
+      { name:'ToggleVO',    desc:'Toggler une sortie virtuelle',  method:'toggle', arg:'ToggleVO',   val:'',
+        params:[{ id:'num', label:'N° sortie',    placeholder:'001 à 128', hint:'ex: 003' }] },
+      { name:'ToggleVI',    desc:'Toggler une entrée virtuelle',  method:'toggle', arg:'ToggleVI',   val:'',
+        params:[{ id:'num', label:'N° entrée',    placeholder:'001 à 128', hint:'ex: 002' }] },
+      { name:'ToggleEnoPC', desc:'Toggler un actionneur Enocean', method:'toggle', arg:'ToggleEnoPC',val:'',
+        params:[{ id:'num', label:'N° actionneur',placeholder:'1 à 24',   hint:'ex: 3' }] },
+    ]
+  },
+  {
+    id:'bitmask', label:'BitMask', desc:'Piloter un groupe', color:'#bc8cff',
+    cmds:[
+      { name:'BitMaskR',  desc:'Masque binaire sur les relais (8 par groupe)',          method:'other', arg:'BitMaskR',  val:'',
+        params:[{ id:'mask', label:'Masque', placeholder:'ex: 00000000 (8 bits / groupe)', hint:'jusqu\'à 56 bits' }] },
+      { name:'BitMaskVO', desc:'Masque binaire sur les 128 sorties virtuelles',         method:'other', arg:'BitMaskVO', val:'',
+        params:[{ id:'mask', label:'Masque', placeholder:'128 bits (0 ou 1)',             hint:'ex: 0000...000' }] },
+      { name:'BitMaskVI', desc:'Masque binaire sur les 128 entrées virtuelles',         method:'other', arg:'BitMaskVI', val:'',
+        params:[{ id:'mask', label:'Masque', placeholder:'128 bits (0 ou 1)',             hint:'ex: 0000...000' }] },
+    ]
+  },
+  {
+    id:'status', label:'Status / Reset', desc:'Fichiers status & Reset', color:'#aaaaaa',
+    cmds:[
+      { name:'status.xml (admin)', desc:'Tous les états en XML (admin)',  method:'other', arg:'_status', val:'admin/status.xml',  params:[] },
+      { name:'status.xml (user)',  desc:'Tous les états en XML (user)',   method:'other', arg:'_status', val:'user/status.xml',   params:[] },
+      { name:'Reset',              desc:'Redémarrer l\'IPX800 V4',       method:'other', arg:'Reset',   val:'',                  params:[] },
+    ]
+  },
+];
+
+// Mappage pour les badges
+const methodColors = { get:'mb-get', set:'mb-set', clear:'mb-clear', toggle:'mb-toggle', other:'mb-other' };
+const methodLabels = { get:'GET', set:'SET', clear:'CLR', toggle:'TGL', other:'CMD' };
+let activeGroup = null;
+let activeCmdIndex = null;
+
+// ==================== PERSISTANCE ====================
+function saveConfig() {
+  localStorage.setItem('v4_ip', document.getElementById('v4-ip').value);
+  localStorage.setItem('v4_key', document.getElementById('v4-apikey').value);
+  localStorage.setItem('v4_prot', document.getElementById('v4-prot').value);
+  updateTarget();
+}
+function loadConfig() {
+  document.getElementById('v4-ip').value = localStorage.getItem('v4_ip') || '';
+  document.getElementById('v4-apikey').value = localStorage.getItem('v4_key') || '';
+  document.getElementById('v4-prot').value = localStorage.getItem('v4_prot') || 'http';
+  updateTarget();
+}
+function updateTarget() {
+  const prot = document.getElementById('v4-prot').value;
+  const ip = document.getElementById('v4-ip').value || '?';
+  document.getElementById('sb-target').innerText = `${prot}://${ip}`;
+}
+
+// ==================== TEST CONNEXION (non bloquant) ====================
+async function testConnection() {
+  const prot = document.getElementById('v4-prot').value;
+  const ip = document.getElementById('v4-ip').value;
+  const key = document.getElementById('v4-apikey').value;
+  if (!ip) { addLog('❌ IP manquante', true); setDot('err'); return false; }
+  const url = `${prot}://${ip}/api/xdevices.json${key?'?key='+key+'&':'?'}Get=R`;
+  addLog(`🔌 Test : ${url}`);
+  const t0 = Date.now();
+  try {
+    const r = await fetch(url, { mode:'cors' });
+    const elapsed = Date.now()-t0;
+    if (r.ok) { addLog(`✅ Connecté (${elapsed}ms)`); setDot('ok'); return true; }
+    else { addLog(`❌ HTTP ${r.status}`, true); setDot('err'); return false; }
+  } catch(e) { addLog(`❌ ${e.message}`, true); setDot('err'); return false; }
+}
+
+// ==================== REQUÊTE HTTP ====================
+async function sendRequest(url) {
+  const t0 = Date.now();
+  addLog(`📡 ${url}`);
+  try {
+    const r = await fetch(url, { mode:'cors' });
+    const elapsed = Date.now()-t0;
+    const ct = r.headers.get('content-type') || '';
+    let body;
+    if (ct.includes('json')) body = await r.json();
+    else body = await r.text();
+    displayResponse(body);
+    addLog(`${r.status} ${r.statusText} (${elapsed}ms)`, !r.ok);
+    document.getElementById('sb-last').textContent = new Date().toLocaleTimeString();
+    return body;
+  } catch(e) {
+    displayResponse(`Erreur : ${e.message}`);
+    addLog(`❌ ${e.message}`, true);
+    return null;
+  }
+}
+function displayResponse(data) {
+  const area = document.getElementById('resp-area');
+  try { area.value = JSON.stringify(data, null, 2); } catch(e) { area.value = String(data); }
+}
+function addLog(msg, isErr=false) {
+  const container = document.getElementById('logs-container');
+  if (container.querySelector('.no-log')) container.innerHTML = '';
+  const div = document.createElement('div');
+  div.className = `log-item ${isErr ? 'log-err' : ''}`;
+  div.innerHTML = `<div class="log-date">${new Date().toLocaleTimeString()}</div><div>${msg}</div>`;
+  container.prepend(div);
+  while(container.children.length > 100) container.removeChild(container.lastChild);
+}
+function copyResp() { navigator.clipboard.writeText(document.getElementById('resp-area').value); }
+function clearResp() { document.getElementById('resp-area').value = ''; }
+function clearLogs() { document.getElementById('logs-container').innerHTML = '<div class="no-log">Aucune requête</div>'; }
+function setDot(state) { document.getElementById('main-dot').className = `status-dot ${state}`; }
+
+// ==================== CONSTRUCTION URL (reprise exacte V4) ====================
+function getParam(gid, idx, pid) {
+  const el = document.getElementById(`p-${gid}-${idx}-${pid}`);
+  return el ? el.value.trim() : '';
+}
+function buildUrl(gid, i) {
+  const g = groups.find(x => x.id === gid);
+  const c = g.cmds[i];
+  const prot = document.getElementById('v4-prot').value;
+  const ip = document.getElementById('v4-ip').value || 'IPX800_V4';
+  const key = document.getElementById('v4-apikey').value;
+
+  if (c.arg === '_status') return `${prot}://${ip}/${c.val}`;
+
+  let qp = [];
+  if (key) qp.push(`key=${key}`);
+  let cmd = '';
+
+  switch (c.arg) {
+    case 'Get': {
+      let v = c.val;
+      if (c.val === 'VR') { const e = getParam(gid,i,'ext'); v = 'VR' + (e || '0'); cmd = `Get=${v}`; break; }
+      if (c.val === 'XPWM') { const r = getParam(gid,i,'range'); v = r ? `XPWM|${r}` : 'XPWM'; cmd = `Get=${v}`; break; }
+      if (c.val === 'XDMX') { const r = getParam(gid,i,'range'); v = r ? `XDMX|${r}` : 'XDMX'; cmd = `Get=${v}`; break; }
+      cmd = `Get=${v}`; break;
+    }
+    case 'SetR': case 'SetVO': case 'SetVI': case 'SetEnoPC': {
+      const n = getParam(gid,i,'num');
+      cmd = n ? `${c.arg}=${n}` : c.arg; break;
+    }
+    case 'SetVA': {
+      const n = getParam(gid,i,'num'), v = getParam(gid,i,'val');
+      cmd = n ? `${c.arg}${n}=${v||0}` : c.arg; break;
+    }
+    case 'SetC': {
+      const n = getParam(gid,i,'num'), v = getParam(gid,i,'val');
+      cmd = n ? `${c.arg}${n}=${v}` : `${c.arg}=${v}`; break;
+    }
+    case 'SetFP': {
+      const z = getParam(gid,i,'zone').padStart(2,'0') || '00', m = getParam(gid,i,'mode') || '0';
+      cmd = `SetFP${z}=${m}`; break;
+    }
+    case 'SetVR': {
+      const n = getParam(gid,i,'num'), v = getParam(gid,i,'val');
+      cmd = n ? `SetVR${n}=${v||0}` : `SetVR=${v||0}`; break;
+    }
+    case 'SetPulse': {
+      const dir = getParam(gid,i,'dir')==='1'?'DOWN':'UP', n = getParam(gid,i,'num'), cnt = getParam(gid,i,'cnt');
+      cmd = `SetPulse${dir}${n||'01'}=${cnt||'1'}`; break;
+    }
+    case 'SetThermo': {
+      const id = getParam(gid,i,'id'), cons = getParam(gid,i,'cons'), hys = getParam(gid,i,'hys'), cp = getParam(gid,i,'cp'), cm = getParam(gid,i,'cm');
+      let parts = [`SetThermo=${id||0}`];
+      if (cons) parts.push(`Cons=${cons}`);
+      if (hys)  parts.push(`Hys=${hys}`);
+      if (cp)   parts.push(`ConsPlus=${cp}`);
+      if (cm)   parts.push(`ConsMoins=${cm}`);
+      cmd = parts.join('&'); break;
+    }
+    case 'SetEnoVR': {
+      const n = getParam(gid,i,'num'), v = getParam(gid,i,'val');
+      cmd = n ? `SetEnoVR${n}=${v||0}` : 'SetEnoVR'; break;
+    }
+    case 'SetG': {
+      const n = getParam(gid,i,'num'), v = getParam(gid,i,'val'), t = getParam(gid,i,'time');
+      let s = n ? `SetG${n}=${v||0}` : `SetG=${v||0}`;
+      if (t) s += `&Time=${t}`;
+      cmd = s; break;
+    }
+    case 'Set010v': {
+      const ext = getParam(gid,i,'ext'), cha = getParam(gid,i,'cha'), val = getParam(gid,i,'val');
+      cmd = `Set010v=${ext||1}&010vCha=${cha||1}&010vValue=${val||0}`; break;
+    }
+    case 'SetSMS': {
+      const n = getParam(gid,i,'num'), m = getParam(gid,i,'msg');
+      cmd = `SetSMS=${n||'+33600000000'}:${m||'Test'}`; break;
+    }
+    case 'ClearR': case 'ClearVO': case 'ClearVI': case 'ClearEnoPC': {
+      const n = getParam(gid,i,'num');
+      cmd = n ? `${c.arg}=${n}` : c.arg; break;
+    }
+    case 'ToggleR': case 'ToggleVO': case 'ToggleVI': case 'ToggleEnoPC': {
+      const n = getParam(gid,i,'num');
+      cmd = n ? `${c.arg}=${n}` : c.arg; break;
+    }
+    case 'BitMaskR': case 'BitMaskVO': case 'BitMaskVI': {
+      const m = getParam(gid,i,'mask');
+      cmd = `${c.arg}=${m||'00000000'}`; break;
+    }
+    case 'Reset': cmd = 'Reset'; break;
+    default: cmd = c.val ? `${c.arg}=${c.val}` : c.arg;
+  }
+
+  if (cmd) qp.push(cmd);
+  const qs = qp.length ? '?' + qp.join('&') : '';
+  return `${prot}://${ip}/api/xdevices.json${qs}`;
+}
+
+// ==================== RENDU DES GROUPES ET COMMANDES ====================
+function renderGroups() {
+  const container = document.getElementById('groups-list');
+  container.innerHTML = groups.map(g => `<div class="group-item" data-group="${g.id}" style="border-left:3px solid ${g.color}"><strong>${g.label}</strong><br><span style="font-size:11px;color:var(--text-dim)">${g.desc}</span></div>`).join('');
+  document.querySelectorAll('.group-item').forEach(el => {
+    el.addEventListener('click', () => selectGroup(el.dataset.group));
+  });
+  if (groups.length) selectGroup(groups[0].id);
+}
+function selectGroup(id) {
+  activeGroup = groups.find(g => g.id === id);
+  document.querySelectorAll('.group-item').forEach(el => el.classList.remove('selected'));
+  document.querySelector(`.group-item[data-group="${id}"]`).classList.add('selected');
+  renderCommands();
+}
+function renderCommands() {
+  if (!activeGroup) return;
+  const container = document.getElementById('cmds-list');
+  container.innerHTML = activeGroup.cmds.map((cmd, idx) => `<div class="cmd-item" data-cmd-idx="${idx}"><strong>${cmd.name}</strong><br><span style="font-size:11px;color:var(--text-dim)">${cmd.desc}</span></div>`).join('');
+  document.getElementById('cmd-count').innerText = activeGroup.cmds.length;
+  document.querySelectorAll('.cmd-item').forEach(el => {
+    el.addEventListener('click', () => selectCommand(parseInt(el.dataset.cmdIdx)));
+  });
+  if (activeGroup.cmds.length) selectCommand(0);
+}
+function selectCommand(idx) {
+  activeCmdIndex = idx;
+  document.querySelectorAll('.cmd-item').forEach(el => el.classList.remove('selected'));
+  const target = document.querySelector(`.cmd-item[data-cmd-idx="${idx}"]`);
+  if (target) target.classList.add('selected');
+  renderDetail();
+}
+function renderDetail() {
+  const cmd = activeGroup.cmds[activeCmdIndex];
+  const container = document.getElementById('detail-content');
+  if (!cmd) return;
+  // Générer les champs de paramètres
+  let paramsHtml = '';
+  (cmd.params || []).forEach(p => {
+    if (p.type === 'select') {
+      paramsHtml += `<div class="field-row"><label>${p.label}</label><select id="p-${activeGroup.id}-${activeCmdIndex}-${p.id}" onchange="updateUrlPreview()">${p.options.map(o => `<option value="${o.split('-')[0]}">${o}</option>`).join('')}</select></div>`;
+    } else {
+      paramsHtml += `<div class="field-row"><label>${p.label}</label><input type="text" id="p-${activeGroup.id}-${activeCmdIndex}-${p.id}" placeholder="${p.placeholder||''}" oninput="updateUrlPreview()"></div>`;
+    }
+  });
+  const urlPreviewId = `url-preview-${activeGroup.id}-${activeCmdIndex}`;
+  const html = `
+    ${paramsHtml}
+    <div class="url-preview" id="${urlPreviewId}"></div>
+    <div class="cmd-actions">
+      <button class="btn btn-primary" onclick="sendCurrentCommand()">Envoyer</button>
+      <button class="btn btn-secondary" onclick="copyCurrentUrl()">Copier URL</button>
+    </div>
+  `;
+  container.innerHTML = html;
+  updateUrlPreview();
+}
+function updateUrlPreview() {
+  const url = buildUrl(activeGroup.id, activeCmdIndex);
+  const el = document.getElementById(`url-preview-${activeGroup.id}-${activeCmdIndex}`);
+  if (el) el.innerText = url;
+}
+async function sendCurrentCommand() {
+  const url = buildUrl(activeGroup.id, activeCmdIndex);
+  await sendRequest(url);
+}
+function copyCurrentUrl() {
+  const url = buildUrl(activeGroup.id, activeCmdIndex);
+  navigator.clipboard.writeText(url);
+  document.getElementById('sbmsg').innerText = 'URL copiée';
+  setTimeout(() => document.getElementById('sbmsg').innerText = '', 2000);
+}
+
+// ==================== REDIMENSIONNEMENT ====================
+// Règles en % de bodyRow.offsetWidth :
+//   Démarrage : chaque cadre = 25%
+//   Barre GC  (Groupes   | Commandes) : [10%, 70%]
+//   Barre CD  (Commandes | Élément)   : [20%, 80%]
+//   Barre Main(Élément   | Réponse)   : [30%, 90%]
+//   10% minimum garanti entre chaque barre adjacente
+function initResizers() {
+  var colGroups  = document.getElementById('col-groups');
+  var colCmds    = document.getElementById('col-cmds');
+  var colDetail  = document.getElementById('col-detail');
+  var leftCols   = document.getElementById('left-columns');
+  var rightPanel = document.getElementById('right-panel');
+  var bodyRow    = document.getElementById('body-row');
+  var divGC      = document.getElementById('div-gc');
+  var divCD      = document.getElementById('div-cd');
+  var divMain    = document.getElementById('div-main');
+  var respPanel  = document.getElementById('resp-panel');
+  var logPanel   = document.getElementById('log-panel');
+  var vertDiv    = document.getElementById('div-vert');
+
+  // W() = largeur réelle disponible (sans le padding du wrapper)
+  function W() { return bodyRow.offsetWidth; }
+  function px(pct) { return Math.round(W() * pct / 100); }
+  function setW(el, w) { el.style.flex = '0 0 ' + w + 'px'; el.style.minWidth = w + 'px'; }
+  function setH(el, h) { el.style.flex = '0 0 ' + h + 'px'; el.style.minHeight = h + 'px'; }
+
+  // Applique les 3 positions de barres (px depuis bord gauche de bodyRow)
+  // b1=barre GC, b2=barre CD, b3=barre Main
+  function applyBars(b1, b2, b3) {
+    // Clamps absolus
+    b1 = Math.max(px(10), Math.min(px(70), b1));
+    b2 = Math.max(px(20), Math.min(px(80), b2));
+    b3 = Math.max(px(30), Math.min(px(90), b3));
+    // Contraintes inter-barres : 10% minimum entre chaque barre
+    b1 = Math.min(b1, b2 - px(10));
+    b2 = Math.max(b2, b1 + px(10));
+    b2 = Math.min(b2, b3 - px(10));
+    b3 = Math.max(b3, b2 + px(10));
+    // Largeurs des 4 cadres
+    var w1 = b1;                      // col-groups
+    var w2 = b2 - b1 - 10;           // col-cmds
+    var w3 = b3 - b2 - 10;           // col-detail
+    var w4 = W() - b3 - 10;          // right-panel
+    setW(colGroups,  Math.max(1, w1));
+    setW(colCmds,    Math.max(1, w2));
+    setW(colDetail,  Math.max(1, w3));
+    setW(rightPanel, Math.max(1, w4));
+    // left-columns englobe Groupes + div-gc + Commandes + div-cd + Élément
+    setW(leftCols, Math.max(1, w1 + 10 + w2 + 10 + w3));
+    return [b1, b2, b3];
+  }
+
+  function saveBars(bars) { localStorage.setItem('v4_bars', JSON.stringify(bars)); }
+  function loadBars() {
+    try { var s = JSON.parse(localStorage.getItem('v4_bars')); if (s && s.length === 3) return s; } catch(e) {}
+    return null;
+  }
+  function setDefault() {
+    var bars = applyBars(px(25), px(50), px(75));
+    saveBars(bars);
+  }
+  function getBars() { var s = loadBars(); return s || [px(25), px(50), px(75)]; }
+
+  // Efface les anciennes clés incompatibles
+  ['v4_main','v4_horiz'].forEach(function(k) { localStorage.removeItem(k); });
+
+  var saved = loadBars();
+  if (saved) { applyBars(saved[0], saved[1], saved[2]); }
+  else { setTimeout(setDefault, 0); }
+
+  // Fabrique un dragger pour une barre verticale
+  function makeDragger(div, minPct, maxPct, getNewBars) {
+    div.addEventListener('mousedown', function(e) {
+      div.classList.add('dragging');
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+      function onMove(ev) {
+        var pos = Math.max(px(minPct), Math.min(px(maxPct), ev.clientX));
+        var bars = applyBars.apply(null, getNewBars(pos));
+        saveBars(bars);
+      }
+      function onUp() {
+        div.classList.remove('dragging');
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+      }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+      e.preventDefault();
+    });
+  }
+
+  makeDragger(divGC,   10, 70, function(pos) { var b = getBars(); pos = Math.min(pos, b[1] - px(10)); return [pos, b[1], b[2]]; });
+  makeDragger(divCD,   20, 80, function(pos) { var b = getBars(); pos = Math.max(pos, b[0] + px(10)); pos = Math.min(pos, b[2] - px(10)); return [b[0], pos, b[2]]; });
+  makeDragger(divMain, 30, 90, function(pos) { var b = getBars(); pos = Math.max(pos, b[1] + px(10)); return [b[0], b[1], pos]; });
+
+  // Diviseur vertical Réponse / Historique
+  var MIN_RESP_H = 80, MIN_LOG_H = 60;
+  function setDefaultVert() {
+    var total = rightPanel.offsetHeight - 10;
+    var hResp = Math.max(MIN_RESP_H, Math.floor(total * 0.6));
+    setH(respPanel, hResp); setH(logPanel, Math.max(MIN_LOG_H, total - hResp));
+  }
+  try {
+    var sv = JSON.parse(localStorage.getItem('v4_vert'));
+    if (sv && sv[0]) {
+      var total = rightPanel.offsetHeight - 10;
+      var hResp = Math.max(MIN_RESP_H, Math.min(total - MIN_LOG_H, sv[0]));
+      setH(respPanel, hResp); setH(logPanel, total - hResp);
+    } else { setTimeout(setDefaultVert, 80); }
+  } catch(e) { setTimeout(setDefaultVert, 80); }
+
+  vertDiv.addEventListener('mousedown', function(e) {
+    vertDiv.classList.add('dragging');
+    document.body.style.cursor = 'row-resize';
+    document.body.style.userSelect = 'none';
+    function onMove(ev) {
+      var ref = respPanel.getBoundingClientRect().top;
+      var total = respPanel.offsetHeight + 10 + logPanel.offsetHeight;
+      var pos = ev.clientY - ref;
+      var hResp = Math.max(MIN_RESP_H, Math.min(total - 10 - MIN_LOG_H, pos));
+      setH(respPanel, hResp); setH(logPanel, total - 10 - hResp);
+      localStorage.setItem('v4_vert', JSON.stringify([hResp]));
+    }
+    function onUp() {
+      vertDiv.classList.remove('dragging');
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    }
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    e.preventDefault();
+  });
+
+  window.addEventListener('resize', setDefault);
+}
+
+// ==================== INIT ====================
+function init() {
+  loadConfig();
+  renderGroups();
+  initResizers();
+  document.getElementById('testBtn').onclick = testConnection;
+  document.getElementById('v4-ip').onchange = () => { saveConfig(); setDot(''); updateTarget(); };
+  document.getElementById('v4-prot').onchange = () => { saveConfig(); setDot(''); updateTarget(); };
+  document.getElementById('v4-apikey').oninput = () => { saveConfig(); setDot(''); };
+  updateTarget();
+  addLog('Prêt – Sélectionnez un groupe puis une commande.');
+}
+window.onload = init;
+</script>
+</body>
+</html>
