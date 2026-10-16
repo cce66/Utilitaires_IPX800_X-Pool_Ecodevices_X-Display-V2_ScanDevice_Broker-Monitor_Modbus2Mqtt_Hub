@@ -1,1 +1,1 @@
-Ce github reunit un ensemble d'utilitaires freeware pour les appareils de GCE-Electronics, il ont été developpés avec l'aide de l'IA Claude code
+Ce github réunit un ensemble d'utilitaires freeware pour les appareils de GCE-Electronics, ils ont été développés avec l'aide de l'IA Claude code
