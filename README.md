@@ -163,6 +163,7 @@ Simulateur du **X-Display V2** dans le navigateur, connecté au broker MQTT : il
 - **Code du widget** éditable avec outils : décommenter, optimiser, compresser, purger les styles, copier
 - **Sauvegarder / charger** un projet, **aperçu dashboard** (zoom 50 / 75 / 100 %), **export HTML**
 - Tient compte des zones utiles de l'IPX800 V5 (150×150, 150×300, 300×300)
+<img width="1920" height="910" alt="image" src="https://github.com/user-attachments/assets/f274d5f1-0881-4123-8c86-985f5b7528ce" />
 
 ### GCE_ED3_Modbus-Generator v1
 
