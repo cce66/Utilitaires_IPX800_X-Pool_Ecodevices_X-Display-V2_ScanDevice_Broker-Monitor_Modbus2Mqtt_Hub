@@ -190,7 +190,7 @@ Simulateur du **X-Display V2** dans le navigateur, connecté au broker MQTT : il
 - **Code du widget** éditable avec outils : décommenter, optimiser, compresser, purger les styles, copier
 - **Sauvegarder / charger** un projet, **aperçu dashboard** (zoom 50 / 75 / 100 %), **export HTML**
 - Tient compte des zones utiles de l'IPX800 V5 (150×150, 150×300, 300×300)
-<img width="1920" height="910" alt="image" src="https://github.com/user-attachments/assets/f274d5f1-0881-4123-8c86-985f5b7528ce" />
+<img width="690" height="327" alt="image" src="https://github.com/user-attachments/assets/220b78e1-85a7-4b63-9f66-5a4410599253" />
 
 ### GCE_ED3_Modbus-Generator v1
 
@@ -200,8 +200,7 @@ Générateur de **fichier JSON de configuration Modbus** pour l'EcoDevices 3, à
 - Type de conversion : aucune, complément à 2 ou IEEE float ; fréquence de lecture (ms)
 - Jusqu'à **20 commandes** par objet Modbus (**32 objets** possibles) : nom, adresse (hex), nombre, direction, mode, type
 - **Aperçu JSON** avec validation, boutons **Copier**, **Importer** et **Télécharger**
-<img width="690" height="327" alt="image" src="https://github.com/user-attachments/assets/220b78e1-85a7-4b63-9f66-5a4410599253" />
-
+<img width="690" height="327" alt="image" src="https://github.com/user-attachments/assets/792d53be-a783-491b-9cdc-430ce62d1e80" />
 
 ---
 
