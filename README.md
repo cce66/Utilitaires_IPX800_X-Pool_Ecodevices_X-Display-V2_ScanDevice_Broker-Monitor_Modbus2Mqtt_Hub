@@ -70,6 +70,9 @@ Scanner réseau pour **détecter les appareils GCE** sur le réseau local (envoi
 - **Scan automatique** de la plage `192.168.x.x`, avec arrêt possible à tout moment
 - Bouton **Flash Device** pour l'accès à la mise à jour du firmware d'un appareil détecté
 - Export des résultats
+<img width="690" height="480" alt="image" src="https://github.com/user-attachments/assets/3f13b5d7-ab69-4b36-bf26-e09ff53e9a1b" />
+<img width="693" height="753" alt="image" src="https://github.com/user-attachments/assets/b8ae837f-d612-4f3d-ab75-0ec5c0559184" />
+
 
 ### GCE-Broker-Monitor (v2.5.2)
 
@@ -81,6 +84,10 @@ Scanner réseau pour **détecter les appareils GCE** sur le réseau local (envoi
 - Pause / reprise, auto-scroll, effacement, historisation
 - **Scénarios** : moteur de règles pour réagir aux messages
 - Copie du topic ou du payload, **export CSV**, statistiques (total, affichés, buffer)
+<img width="690" height="341" alt="image" src="https://github.com/user-attachments/assets/9fa78df7-886a-4235-b2c2-62eb29b9ea46" />
+<img width="886" height="641" alt="image" src="https://github.com/user-attachments/assets/812d15a7-e0a9-4afb-81db-c06a4b9d9c72" />
+<img width="615" height="612" alt="image" src="https://github.com/user-attachments/assets/b8457034-baaf-4f2d-9022-f311875463d7" />
+
 
 ### GCE-Modbus2Mqtt
 
@@ -90,6 +97,10 @@ Scanner réseau pour **détecter les appareils GCE** sur le réseau local (envoi
 - Connexion MQTT : broker, topic racine, Client ID, utilisateur / mot de passe, QoS, *Retain*
 - Configuration Modbus : **chargement du fichier JSON** produit par `GCE_ED3_Modbus-Generator`, choix de l'appareil et de l'esclave
 - Tableau des registres (commande, adresse, nombre, type, lecture/écriture, valeur, topic MQTT), bouton **Tester** pour voir la requête API, sauvegarde de la configuration
+<img width="1086" height="693" alt="image" src="https://github.com/user-attachments/assets/730d74cb-e691-4d18-a0a2-df08ed3f260d" />
+<img width="690" height="391" alt="image" src="https://github.com/user-attachments/assets/1acefbeb-c6f3-4c07-9d34-dbe7ad834d88" />
+<img width="615" height="260" alt="image" src="https://github.com/user-attachments/assets/20d6974b-89bf-4a6d-b2d2-d11159c34583" />
+
 
 ### GCE-Hub (v1.0.7)
 
@@ -102,6 +113,7 @@ Scanner réseau pour **détecter les appareils GCE** sur le réseau local (envoi
 - Affiche l'IP locale de la machine
 
 > Placez les JAR (`Gce-ScanDevice`, `GCE-Broker-Monitor`, `GCE-Modbus2mqtt`) **dans le même dossier** que `GCE-Hub` pour que les boutons de lancement les trouvent.
+<img width="690" height="446" alt="image" src="https://github.com/user-attachments/assets/ef754d3d-c78e-4c0b-9d5f-365288046d5a" />
 
 ---
 
@@ -117,6 +129,12 @@ Scanner réseau pour **détecter les appareils GCE** sur le réseau local (envoi
 | `GCE_IPX800V5_Api-Deck v2.html` | IPX800 V5 | API REST : méthodes GET / POST / PUT / DELETE, paramètres et corps JSON, **génération `curl` et `fetch`**, filtre par ID, gestion des **instances** (voir, créer, modifier, supprimer) avec rafraîchissement **Live**. Objets couverts : IPX, ANA, STR, calendriers, comparateurs, compteurs, fonctions, e-mails, MQTT, parseur JSON, watchdogs, planifications, thermostats, minuteries, Modbus, extensions X-xxx, météo, Hue, X-Pool, etc. |
 | `GCE_ED3_Api-Deck v2.1.html` | EcoDevices 3 | Testeur avec méthodes GET / POST / PUT / DELETE. Catégories : état ED3 et plugins, relais (on / off / toggle), **logs et courbes** (Core Logger), **TIC / Linky**, **tarifs**, planning / calendrier. Lien vers la documentation officielle de l'API ED3 |
 | `GCE_EDRT2_Api-Deck v1.html` | EcoDevices RT2 | Commandes `Get`, `Set`, `Clear` et `Toggle` (relais, sorties virtuelles, compteurs, fil pilote, actionneurs EnOcean, etc.) |
+<img width="690" height="327" alt="image" src="https://github.com/user-attachments/assets/ab63d870-d29e-4596-82bf-55e43f1ea268" />
+<img width="690" height="342" alt="image" src="https://github.com/user-attachments/assets/18a739e3-5efb-479e-adff-c1eb0d513542" />
+<img width="690" height="327" alt="image" src="https://github.com/user-attachments/assets/4f96d896-25b2-490c-8674-e5c62260e42b" />
+<img width="690" height="327" alt="image" src="https://github.com/user-attachments/assets/9be59311-0b28-4778-bc0f-d19c945fbf72" />
+<img width="690" height="327" alt="image" src="https://github.com/user-attachments/assets/e90b8305-18bb-42de-b446-bf8bb936ba09" />
+<img width="690" height="327" alt="image" src="https://github.com/user-attachments/assets/c5174513-166f-43a5-b8ef-8b846df9f0cf" />
 
 ---
 
@@ -131,6 +149,15 @@ Clients MQTT **dans le navigateur** (via WebSocket). Ils s'abonnent aux topics d
 | `GCE_X-DISPLAY-V2_Mqtt-Deck v1.html` | X-Display V2 | Référence API V3.2 : configuration générale (extinction écran, verrouillage, etc.), gestion des écrans, types d'écrans, commandes par écran |
 
 Champs de connexion : URL WebSocket du broker (`ws://IP:9001`), Client ID, utilisateur, mot de passe et identifiant de l'appareil (pour les topics de la forme `x-display_<ID>` ou `x-pool_<ID>`).
+
+<img width="690" height="342" alt="image" src="https://github.com/user-attachments/assets/c555ede3-2d53-4098-9539-30c59574b505" />
+<img width="690" height="327" alt="image" src="https://github.com/user-attachments/assets/0bd5c28e-fbc2-4163-84fc-9e0e26ebdf59" />
+<img width="517" height="245" alt="image" src="https://github.com/user-attachments/assets/f29df1e5-7d4a-4c2e-8b69-42249cc803ec" />
+<img width="517" height="245" alt="image" src="https://github.com/user-attachments/assets/e683001d-b88f-4eef-9314-a1afd8842ec8" />
+<img width="517" height="245" alt="image" src="https://github.com/user-attachments/assets/d39b1650-7a01-4962-8685-d679b0a19702" />
+<img width="517" height="245" alt="image" src="https://github.com/user-attachments/assets/9c8e3e47-05bb-494a-a6fd-677380814e53" />
+<img width="323" height="323" alt="image" src="https://github.com/user-attachments/assets/9ebe5ce4-a6cd-4d1a-90cc-2b88cd4aa4d9" />
+
 
 ---
 
@@ -173,6 +200,8 @@ Générateur de **fichier JSON de configuration Modbus** pour l'EcoDevices 3, à
 - Type de conversion : aucune, complément à 2 ou IEEE float ; fréquence de lecture (ms)
 - Jusqu'à **20 commandes** par objet Modbus (**32 objets** possibles) : nom, adresse (hex), nombre, direction, mode, type
 - **Aperçu JSON** avec validation, boutons **Copier**, **Importer** et **Télécharger**
+<img width="690" height="327" alt="image" src="https://github.com/user-attachments/assets/220b78e1-85a7-4b63-9f66-5a4410599253" />
+
 
 ---
 
